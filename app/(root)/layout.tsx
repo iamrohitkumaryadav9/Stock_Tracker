@@ -18,7 +18,7 @@ const Layout = async ({ children }: { children : React.ReactNode }) => {
         <main className="min-h-screen text-gray-400">
             <Header user={user} />
 
-            <div className="container py-10">
+            <div className="w-full py-10">
                 {children}
             </div>
         </main>

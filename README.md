@@ -77,3 +77,15 @@ npx inngest-cli@latest dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to view the project.
 
+**Troubleshooting**
+
+**TradingView Widgets Not Loading (403 Forbidden)**
+
+If you see 403 Forbidden errors for TradingView widgets in development, this is **expected behavior**. TradingView blocks requests from `localhost` and `127.0.0.1` for security reasons.
+
+- ✅ **Widgets will work correctly in production** when deployed to a real domain
+- ⚠️ In development, you'll see error messages but the app will function otherwise
+- 💡 To test widgets locally, you can use tools like [ngrok](https://ngrok.com/) to expose your local server with a public URL
+
+This is a known limitation with TradingView's security policies and not a bug in the application.
+

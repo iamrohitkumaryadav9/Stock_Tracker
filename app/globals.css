@@ -149,10 +149,10 @@
     @apply h-12 cursor-pointer bg-gradient-to-b from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-gray-950 font-medium text-base rounded-lg shadow-lg disabled:opacity-50;
   }
   .home-wrapper {
-    @apply text-gray-400 flex-col gap-4 md:gap-10 items-center sm:items-start;
+    @apply text-gray-400 flex flex-col gap-6 md:gap-8 lg:gap-10 w-full max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8;
   }
   .home-section {
-    @apply w-full gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3;
+    @apply w-full gap-6 md:gap-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3;
   }
   .header {
     @apply z-50 w-full h-[70px] bg-gray-800;
@@ -486,4 +486,21 @@
 
 .scrollbar-hide-default::-webkit-scrollbar-thumb:hover {
   background-color: #9095A1;
+}
+
+/* Ensure Next.js error overlay is visible */
+[data-nextjs-dialog],
+[data-nextjs-dialog-overlay],
+[data-nextjs-toast] {
+  z-index: 9999 !important;
+}
+
+/* Ensure error overlay button is visible */
+[data-nextjs-toast] {
+  position: fixed !important;
+  bottom: 20px !important;
+  left: 20px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
