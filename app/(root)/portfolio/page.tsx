@@ -5,7 +5,7 @@ import { getPortfolio, getTransactionHistory } from '@/lib/actions/portfolio.act
 import PortfolioSummary from '@/components/PaperTrading/PortfolioSummary';
 import PositionsTable from '@/components/PaperTrading/PositionsTable';
 import TransactionHistory from '@/components/PaperTrading/TransactionHistory';
-import TradingPanel from '@/components/PaperTrading/TradingPanel';
+import AdvancedTradingTabs from '@/components/AdvancedTrading/AdvancedTradingTabs';
 
 export default async function PortfolioPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -41,9 +41,12 @@ export default async function PortfolioPage() {
           </div>
           
           <div>
-            <h2 className="text-xl font-semibold text-gray-100 mb-4">Quick Trade</h2>
-            <TradingPanel 
+            <h2 className="text-xl font-semibold text-gray-100 mb-4">Advanced Trading</h2>
+            <AdvancedTradingTabs 
               userId={userId}
+              onTradeComplete={() => {
+                // Refresh will be handled by router.refresh() in components
+              }}
             />
           </div>
         </div>

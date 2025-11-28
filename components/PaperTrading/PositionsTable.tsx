@@ -4,6 +4,7 @@ import { PortfolioSummary } from '@/lib/actions/portfolio.actions';
 import RealTimeStockPrice from '../RealTimeStockPrice';
 import Link from 'next/link';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface PositionsTableProps {
   positions: PortfolioSummary['positions'];
@@ -24,7 +25,8 @@ export default function PositionsTable({ positions }: PositionsTableProps) {
         <table className="w-full">
           <thead>
             <tr className="table-header-row">
-              <th className="table-header text-left pl-4 py-3">Symbol</th>
+              <th className="table-header text-left pl-4 py-3">Type</th>
+              <th className="table-header text-left py-3">Symbol</th>
               <th className="table-header text-left py-3">Quantity</th>
               <th className="table-header text-right py-3">Avg Price</th>
               <th className="table-header text-right py-3">Current Price</th>
@@ -34,28 +36,74 @@ export default function PositionsTable({ positions }: PositionsTableProps) {
             </tr>
           </thead>
           <tbody>
-            {positions.map((position) => {
+            {positions.map((position, index) => {
               const isPositive = position.gainLoss >= 0;
+              const assetTypeLabels = {
+                stock: 'Stock',
+                crypto: 'Crypto',
+                forex: 'Forex',
+                futures: 'Futures',
+                options: 'Options'
+              };
+              
+              const assetTypeColors = {
+                stock: 'bg-blue-500/20 text-blue-400',
+                crypto: 'bg-yellow-500/20 text-yellow-400',
+                forex: 'bg-green-500/20 text-green-400',
+                futures: 'bg-purple-500/20 text-purple-400',
+                options: 'bg-orange-500/20 text-orange-400'
+              };
+
+              const positionKey = `${position.assetType}-${position.symbol}-${index}`;
+              const displaySymbol = position.optionType && position.strikePrice
+                ? `${position.symbol} ${position.optionType.toUpperCase()} $${position.strikePrice}`
+                : position.symbol;
+
               return (
-                <tr key={position.symbol} className="table-row">
+                <tr key={positionKey} className="table-row">
                   <td className="table-cell pl-4 py-3">
-                    <Link
-                      href={`/stocks/${position.symbol}`}
-                      className="font-mono font-semibold hover:text-yellow-500 transition-colors"
-                    >
-                      {position.symbol}
-                    </Link>
+                    <span className={cn('px-2 py-1 rounded text-xs font-semibold', assetTypeColors[position.assetType])}>
+                      {assetTypeLabels[position.assetType]}
+                    </span>
                   </td>
-                  <td className="table-cell py-3 text-gray-300">{position.quantity}</td>
+                  <td className="table-cell py-3">
+                    {position.assetType === 'stock' ? (
+                      <Link
+                        href={`/stocks/${position.symbol}`}
+                        className="font-mono font-semibold hover:text-yellow-500 transition-colors"
+                      >
+                        {displaySymbol}
+                      </Link>
+                    ) : (
+                      <span className="font-mono font-semibold">{displaySymbol}</span>
+                    )}
+                    {position.expirationDate && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Exp: {new Date(position.expirationDate).toLocaleDateString()}
+                      </div>
+                    )}
+                  </td>
+                  <td className="table-cell py-3 text-gray-300">
+                    {position.quantity}
+                    {position.assetType === 'options' && <span className="text-xs text-gray-500 ml-1">contracts</span>}
+                    {position.assetType === 'forex' && <span className="text-xs text-gray-500 ml-1">lots</span>}
+                    {position.assetType === 'futures' && <span className="text-xs text-gray-500 ml-1">contracts</span>}
+                  </td>
                   <td className="table-cell text-right py-3 text-gray-300">
                     ${position.averagePrice.toFixed(2)}
                   </td>
                   <td className="table-cell text-right py-3">
-                    <RealTimeStockPrice
-                      symbol={position.symbol}
-                      initialPrice={position.currentPrice}
-                      showIndicator={true}
-                    />
+                    {position.assetType === 'stock' ? (
+                      <RealTimeStockPrice
+                        symbol={position.symbol}
+                        initialPrice={position.currentPrice}
+                        showIndicator={true}
+                      />
+                    ) : (
+                      <span className="text-gray-100">
+                        ${position.currentPrice.toFixed(position.assetType === 'forex' ? 5 : 2)}
+                      </span>
+                    )}
                   </td>
                   <td className="table-cell text-right py-3 text-gray-300">
                     ${position.totalCost.toFixed(2)}
