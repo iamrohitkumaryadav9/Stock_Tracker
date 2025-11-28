@@ -4,6 +4,10 @@ import RealTimeStockPrice from "@/components/RealTimeStockPrice";
 import AIPricePrediction from "@/components/AIPricePrediction";
 import PostFeed from "@/components/Social/PostFeed";
 import CreatePost from "@/components/Social/CreatePost";
+import SentimentAnalysis from "@/components/AI/SentimentAnalysis";
+import PatternRecognition from "@/components/AI/PatternRecognition";
+import RiskAssessment from "@/components/AI/RiskAssessment";
+import TradingSignals from "@/components/AI/TradingSignals";
 import { getStockQuote } from "@/lib/actions/quote.actions";
 import { getPosts } from "@/lib/actions/social.actions";
 import { auth } from '@/lib/better-auth/auth';
@@ -98,6 +102,17 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
             symbol={symbol}
             currentPrice={initialQuote?.price || 0}
           />
+
+          {/* AI Analysis Section */}
+          <div className="mt-6">
+            <h2 className="text-xl font-semibold text-gray-100 mb-4">AI Analysis</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <SentimentAnalysis symbol={symbol} />
+              <PatternRecognition symbol={symbol} />
+              <RiskAssessment symbol={symbol} />
+              <TradingSignals symbol={symbol} />
+            </div>
+          </div>
 
           <div className="mt-6">
             <h2 className="text-xl font-semibold text-gray-100 mb-4">Community Discussions</h2>
