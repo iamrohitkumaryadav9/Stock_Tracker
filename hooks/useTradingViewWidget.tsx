@@ -196,64 +196,32 @@ const useTradingViewWidget = (scriptUrl: string, config: Record<string, unknown>
                 console.error('Script URL:', scriptUrl);
             }
             
-            // Set error state and show error UI (outside try-catch so it always runs)
+            // Set error state but don't show error UI (silently fail)
             setHasError(true);
+            // Just hide the widget container if it fails to load
             if (container && elementsRef.current.widget) {
-                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                const errorDiv = document.createElement("div");
-                errorDiv.style.cssText = "display: flex; flex-direction: column; align-items: center; justify-content: center; height: " + height + "px; padding: 20px; text-align: center; background-color: #141414; border-radius: 8px; border: 1px solid #30333A;";
-                errorDiv.innerHTML = `
-                    <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
-                    <h3 style="color: #DBDBDB; font-size: 18px; font-weight: 600; margin-bottom: 8px;">Unable to Load Widget</h3>
-                    <p style="color: #9095A1; font-size: 14px; margin-bottom: 12px;">Failed to connect to TradingView servers (403 Forbidden).</p>
-                    ${isLocalhost ? `
-                        <p style="color: #FBBF24; font-size: 13px; margin-bottom: 8px; font-weight: 500;">⚠️ Development Environment Detected</p>
-                        <p style="color: #9095A1; font-size: 12px; margin-bottom: 8px;">TradingView widgets often block requests from localhost/127.0.0.1 for security reasons.</p>
-                        <p style="color: #9095A1; font-size: 12px; margin-bottom: 8px;">This is expected behavior and widgets should work correctly in production.</p>
-                        <p style="color: #60A5FA; font-size: 11px; margin-top: 12px;">💡 Tip: Test with a production build or use a tool like ngrok to expose your local server.</p>
-                    ` : `
-                        <p style="color: #9095A1; font-size: 12px; margin-bottom: 8px;">This may be due to CORS restrictions, rate limiting, or IP blocking.</p>
-                        <p style="color: #9095A1; font-size: 12px; margin-bottom: 8px;">Please check your network connection and try again later.</p>
-                    `}
-                    <p style="color: #60666E; font-size: 11px; font-family: monospace; word-break: break-all; max-width: 90%; margin-top: 12px;">URL: ${scriptUrl}</p>
-                    <p style="color: #60666E; font-size: 10px; margin-top: 8px;">Error: ${errorMessage || '403 Forbidden'}</p>
-                    <p style="color: #60666E; font-size: 10px; margin-top: 4px;">Check browser console (Network tab) for more details</p>
-                `;
-                
                 try {
                     if (container.contains(elementsRef.current.widget)) {
-                        container.replaceChild(errorDiv, elementsRef.current.widget);
-                        elementsRef.current.errorDiv = errorDiv;
-                        elementsRef.current.widget = undefined;
+                        elementsRef.current.widget.style.display = 'none';
                     }
                 } catch (e) {
-                    // Ignore replacement errors
+                    // Ignore errors
                 }
             }
         };
 
-        // Set a timeout to detect connection issues
+        // Set a timeout to detect connection issues (silently fail)
         timeoutId = setTimeout(() => {
             if (script.readyState === 'loading' || !script.readyState) {
                 setHasError(true);
+                // Just hide the widget container if it times out
                 if (container && elementsRef.current.widget) {
-                    const errorDiv = document.createElement("div");
-                    errorDiv.style.cssText = "display: flex; flex-direction: column; align-items: center; justify-content: center; height: " + height + "px; padding: 20px; text-align: center; background-color: #141414; border-radius: 8px; border: 1px solid #30333A;";
-                    errorDiv.innerHTML = `
-                        <div style="font-size: 48px; margin-bottom: 16px;">⏱️</div>
-                        <h3 style="color: #DBDBDB; font-size: 18px; font-weight: 600; margin-bottom: 8px;">Connection Timeout</h3>
-                        <p style="color: #9095A1; font-size: 14px; margin-bottom: 12px;">Unable to load TradingView widget. The request timed out.</p>
-                        <p style="color: #9095A1; font-size: 12px;">This may be due to network issues or firewall restrictions.</p>
-                    `;
-                    
                     try {
                         if (container.contains(elementsRef.current.widget)) {
-                            container.replaceChild(errorDiv, elementsRef.current.widget);
-                            elementsRef.current.errorDiv = errorDiv;
-                            elementsRef.current.widget = undefined;
+                            elementsRef.current.widget.style.display = 'none';
                         }
                     } catch (e) {
-                        // Ignore replacement errors
+                        // Ignore errors
                     }
                 }
             }
