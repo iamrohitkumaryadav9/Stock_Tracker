@@ -1,5 +1,13 @@
 import TradingViewWidget from "@/components/TradingViewWidget";
 import WatchlistButton from "@/components/WatchlistButton";
+import RealTimeStockPrice from "@/components/RealTimeStockPrice";
+import AIPricePrediction from "@/components/AIPricePrediction";
+import PostFeed from "@/components/Social/PostFeed";
+import CreatePost from "@/components/Social/CreatePost";
+import { getStockQuote } from "@/lib/actions/quote.actions";
+import { getPosts } from "@/lib/actions/social.actions";
+import { auth } from '@/lib/better-auth/auth';
+import { headers } from 'next/headers';
 import {
   SYMBOL_INFO_WIDGET_CONFIG,
   CANDLE_CHART_WIDGET_CONFIG,
@@ -12,6 +20,16 @@ import {
 export default async function StockDetails({ params }: StockDetailsPageProps) {
   const { symbol } = await params;
   const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
+  
+  // Get current user session
+  const session = await auth.api.getSession({ headers: await headers() });
+  const currentUserId = session?.user?.id;
+  
+  // Fetch initial quote for the stock
+  const initialQuote = await getStockQuote(symbol);
+  
+  // Fetch social posts for this symbol
+  const socialPosts = await getPosts(symbol, 10);
 
   return (
     <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
@@ -42,6 +60,19 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
         {/* Right column */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-100 mb-2">{symbol.toUpperCase()}</h1>
+                <RealTimeStockPrice
+                  symbol={symbol}
+                  initialPrice={initialQuote?.price}
+                  initialChange={initialQuote?.change}
+                  initialChangePercent={initialQuote?.changePercent}
+                  className="text-2xl"
+                  showIndicator={true}
+                />
+              </div>
+            </div>
             <WatchlistButton symbol={symbol.toUpperCase()} company={symbol.toUpperCase()} isInWatchlist={false} />
           </div>
 
@@ -62,6 +93,19 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
             config={COMPANY_FINANCIALS_WIDGET_CONFIG(symbol)}
             height={464}
           />
+
+          <AIPricePrediction
+            symbol={symbol}
+            currentPrice={initialQuote?.price || 0}
+          />
+
+          <div className="mt-6">
+            <h2 className="text-xl font-semibold text-gray-100 mb-4">Community Discussions</h2>
+            <CreatePost symbol={symbol} />
+            <div className="mt-4">
+              <PostFeed symbol={symbol} initialPosts={socialPosts} currentUserId={currentUserId} />
+            </div>
+          </div>
         </div>
       </section>
     </div>
