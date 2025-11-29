@@ -7,6 +7,7 @@ import PositionsTable from '@/components/PaperTrading/PositionsTable';
 import TransactionHistory from '@/components/PaperTrading/TransactionHistory';
 import AdvancedTradingTabs from '@/components/AdvancedTrading/AdvancedTradingTabs';
 import PortfolioOptimizer from '@/components/AI/PortfolioOptimizer';
+import PortfolioNews from '@/components/AI/PortfolioNews';
 
 export default async function PortfolioPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -33,14 +34,15 @@ export default async function PortfolioPage() {
       <div className="max-w-screen-2xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-100 mb-6">Paper Trading Portfolio</h1>
 
-        <PortfolioSummary portfolio={portfolio} />
-
-        <div className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <PortfolioNews positions={portfolio.positions} className="h-fit" />
           <PortfolioOptimizer positions={portfolio.positions} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2">
+        <PortfolioSummary portfolio={portfolio} />
+
+        <div className="grid grid-cols-1 gap-6 mb-6">
+          <div>
             <h2 className="text-xl font-semibold text-gray-100 mb-4">Positions</h2>
             <PositionsTable positions={portfolio.positions} />
           </div>

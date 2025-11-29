@@ -602,7 +602,7 @@ export interface NewsSentimentAnalysis {
   symbol: string;
   score: number; // -100 to 100
   summary: string;
-  articles: { headline: string; sentiment: 'bullish' | 'bearish' | 'neutral' }[];
+  articles: { headline: string; sentiment: 'bullish' | 'bearish' | 'neutral'; url?: string; datetime?: number }[];
   timestamp: Date;
 }
 
@@ -632,15 +632,76 @@ Provide a JSON response with:
     const jsonText = jsonMatch[1] || text;
     const data = JSON.parse(jsonText.trim());
 
+    // Map AI results back to original articles to preserve metadata
+    const analyzedArticles = (data.articles || []).map((analyzed: any) => {
+      const original = articles.find(a => a.headline.includes(analyzed.headline.substring(0, 20)));
+      return {
+        headline: analyzed.headline,
+        sentiment: analyzed.sentiment,
+        url: original?.url,
+        datetime: original?.datetime
+      };
+    });
+
     return {
       symbol,
       score: data.score || 0,
       summary: data.summary || 'No sentiment available',
-      articles: data.articles || [],
+      articles: analyzedArticles,
       timestamp: new Date()
     };
   } catch (error) {
     console.error('Error analyzing news sentiment:', error);
+    return null;
+  }
+}
+
+// ==================== PORTFOLIO NEWS SUMMARY ====================
+
+export interface PortfolioNewsSummary {
+  summary: string;
+  impact: 'positive' | 'negative' | 'neutral';
+  keyEvents: string[];
+  timestamp: Date;
+}
+
+export async function analyzePortfolioNews(symbols: string[]): Promise<PortfolioNewsSummary | null> {
+  try {
+    if (!symbols || symbols.length === 0) return null;
+
+    // Limit to top 5 symbols to avoid hitting API limits
+    const topSymbols = symbols.slice(0, 5);
+    const allNews = await getNews(topSymbols);
+
+    if (!allNews || allNews.length === 0) return null;
+
+    const newsText = allNews.slice(0, 10).map(a => `- [${a.related}] ${a.headline}: ${a.summary}`).join('\n');
+
+    const prompt = `Analyze the news for this portfolio holdings (${topSymbols.join(', ')}):
+
+${newsText}
+
+Provide a JSON response with:
+{
+  "summary": "A concise morning briefing style summary of the most important news affecting the portfolio...",
+  "impact": "positive" | "negative" | "neutral",
+  "keyEvents": ["Event 1", "Event 2"]
+}`;
+
+    const text = await generateContentWithFallback(prompt);
+
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/```\s*([\s\S]*?)\s*```/) || [null, text];
+    const jsonText = jsonMatch[1] || text;
+    const data = JSON.parse(jsonText.trim());
+
+    return {
+      summary: data.summary || 'No news summary available',
+      impact: data.impact || 'neutral',
+      keyEvents: data.keyEvents || [],
+      timestamp: new Date()
+    };
+  } catch (error) {
+    console.error('Error analyzing portfolio news:', error);
     return null;
   }
 }

@@ -2,9 +2,12 @@ export const NAV_ITEMS = [
     { href: '/', label: 'Dashboard' },
     { href: '/portfolio', label: 'Portfolio' },
     { href: '/backtesting', label: 'Backtesting' },
+    { href: '/journal', label: 'Journal' },
+    { href: '/portfolio/analytics', label: 'Analytics' },
+    { href: '/reports', label: 'Reports' },
+    { href: '/tools/roi', label: 'Tools' },
     { href: '/social', label: 'Community' },
     { href: '/search', label: 'Search' },
-    // { href: '/watchlist', label: 'Watchlist' },
 ];
 
 // Sign-up form select options

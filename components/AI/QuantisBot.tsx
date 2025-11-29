@@ -60,8 +60,8 @@ const QuantisBot = () => {
 
     return (
         <div className={cn(
-            "fixed bottom-6 right-6 bg-[#1E222D] border border-[#2A2E39] shadow-2xl z-50 transition-all duration-300 overflow-hidden flex flex-col",
-            isMinimized ? "w-72 h-14 rounded-t-xl" : "w-[380px] h-[600px] rounded-xl"
+            "fixed bottom-4 right-4 md:bottom-6 md:right-6 bg-[#1E222D] border border-[#2A2E39] shadow-2xl z-50 transition-all duration-300 overflow-hidden flex flex-col",
+            isMinimized ? "w-64 md:w-72 h-14 rounded-t-xl" : "w-[calc(100vw-2rem)] md:w-[380px] h-[500px] md:h-[600px] rounded-xl"
         )}>
             {/* Header */}
             <div
