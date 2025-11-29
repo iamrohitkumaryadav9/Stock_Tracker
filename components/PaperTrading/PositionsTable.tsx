@@ -62,7 +62,7 @@ export default function PositionsTable({ positions }: PositionsTableProps) {
               <th className="table-header text-right py-3">Current Price</th>
               <th className="table-header text-right py-3">Total Cost</th>
               <th className="table-header text-right py-3">Current Value</th>
-              <th className="table-header text-right py-3">Gain/Loss</th>
+              <th className="table-header text-right py-3 pr-4">Gain/Loss</th>
             </tr>
           </thead>
           <tbody>
@@ -145,7 +145,7 @@ export default function PositionsTable({ positions }: PositionsTableProps) {
                   <td className="table-cell text-right py-3 text-gray-300">
                     ${position.currentValue.toFixed(2)}
                   </td>
-                  <td className={`table-cell text-right py-3 font-semibold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                  <td className={`table-cell text-right py-3 pr-4 font-semibold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                     <div className="flex items-center justify-end gap-1">
                       {isPositive ? (
                         <TrendingUp className="h-4 w-4" />

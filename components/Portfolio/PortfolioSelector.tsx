@@ -83,7 +83,7 @@ export default function PortfolioSelector({ userId, portfolios, currentPortfolio
     };
 
     return (
-        <div className="flex items-center gap-4 mb-6">
+        <>
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                     <Button
@@ -179,6 +179,6 @@ export default function PortfolioSelector({ userId, portfolios, currentPortfolio
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </>
     );
 }

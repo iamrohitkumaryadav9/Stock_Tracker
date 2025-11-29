@@ -6,7 +6,8 @@ import { Post } from '@/database/models/post.model';
 import { Portfolio } from '@/database/models/portfolio.model';
 import { Position } from '@/database/models/position.model';
 import { Watchlist } from '@/database/models/watchlist.model';
-import yahooFinance from 'yahoo-finance2';
+const YahooFinance = require('yahoo-finance2').default;
+const yahooFinance = new YahooFinance();
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');

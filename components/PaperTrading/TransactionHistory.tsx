@@ -38,7 +38,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
               <th className="table-header text-right py-3">Quantity</th>
               <th className="table-header text-right py-3">Price</th>
               <th className="table-header text-right py-3">Total</th>
-              <th className="table-header text-right py-3">Date</th>
+              <th className="table-header text-right py-3 pr-4">Date</th>
             </tr>
           </thead>
           <tbody>
@@ -46,7 +46,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
               const isBuy = transaction.type === 'buy';
               const date = new Date(transaction.timestamp);
               const assetType = transaction.assetType || 'stock';
-              
+
               const assetTypeLabels = {
                 stock: 'Stock',
                 crypto: 'Crypto',
@@ -54,7 +54,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                 futures: 'Futures',
                 options: 'Options'
               };
-              
+
               const assetTypeColors = {
                 stock: 'bg-blue-500/20 text-blue-400',
                 crypto: 'bg-yellow-500/20 text-yellow-400',
@@ -62,7 +62,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                 futures: 'bg-purple-500/20 text-purple-400',
                 options: 'bg-orange-500/20 text-orange-400'
               };
-              
+
               return (
                 <tr key={index} className="table-row">
                   <td className="table-cell pl-4 py-3">
@@ -97,7 +97,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
                   <td className="table-cell text-right py-3 text-gray-100 font-semibold">
                     ${transaction.totalAmount.toFixed(2)}
                   </td>
-                  <td className="table-cell text-right py-3 text-gray-400 text-sm">
+                  <td className="table-cell text-right py-3 pr-4 text-gray-400 text-sm">
                     {date.toLocaleDateString()} {date.toLocaleTimeString()}
                   </td>
                 </tr>

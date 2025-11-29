@@ -1,19 +1,10 @@
 export const NAV_ITEMS = [
     { href: '/', label: 'Dashboard' },
     { href: '/portfolio', label: 'Portfolio' },
-    { href: '/backtesting', label: 'Backtesting' },
-    { href: '/journal', label: 'Journal' },
-    { href: '/portfolio/analytics', label: 'Analytics' },
-    { href: '/reports', label: 'Reports' },
-    { href: '/competitions', label: 'Competitions' },
-    { href: '/tools/templates', label: 'Templates' },
-    { href: '/tools/roi', label: 'ROI' },
+    { href: '/resources', label: 'Resources' },
     { href: '/social', label: 'Community' },
     { href: '/discovery', label: 'Discovery' },
     { href: '/search', label: 'Search' },
-    { href: '/charts', label: 'Charts' },
-    { href: '/tools/screener', label: 'Screener' },
-    { href: '/tools/heatmap', label: 'Heatmap' },
     { href: '/integrations', label: 'Integrations' },
 ];
 

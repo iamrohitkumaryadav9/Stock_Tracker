@@ -25,7 +25,15 @@ const WebSocketContext = createContext<WebSocketContextType | null>(null);
 export function useWebSocketContext() {
     const context = useContext(WebSocketContext);
     if (!context) {
-        throw new Error('useWebSocketContext must be used within a WebSocketProvider');
+        // Return a default disconnected state instead of throwing
+        // This prevents app crashes if the provider is missing or fails to load
+        return {
+            isConnected: false,
+            quotes: new Map(),
+            error: 'WebSocketProvider missing',
+            subscribe: () => { },
+            unsubscribe: () => { }
+        };
     }
     return context;
 }
@@ -52,6 +60,9 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     // Store previous prices to calculate change
     const priceHistoryRef = useRef<Map<string, number>>(new Map());
 
+    const retryCountRef = useRef(0);
+    const MAX_RETRIES = 5;
+
     const connect = useCallback(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             return;
@@ -62,6 +73,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
             return;
         }
 
+        if (retryCountRef.current >= MAX_RETRIES) {
+            console.warn('WebSocket connection failed multiple times. Stopping retries. Check your API key or network connection.');
+            return;
+        }
+
         try {
             const wsUrl = `wss://ws.finnhub.io?token=${finnhubApiKey}`;
             const ws = new WebSocket(wsUrl);
@@ -69,6 +85,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
             ws.onopen = () => {
                 setIsConnected(true);
                 setError(null);
+                retryCountRef.current = 0; // Reset retries on successful connection
                 console.log('Global WebSocket connected to Finnhub');
 
                 // Resubscribe to all active symbols
@@ -139,17 +156,26 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
                     return;
                 }
 
-                // Auto-reconnect
+                // Auto-reconnect with backoff
+                const delay = Math.min(5000 * Math.pow(1.5, retryCountRef.current), 30000);
+                retryCountRef.current += 1;
+
+                console.log(`WebSocket closed. Reconnecting in ${delay}ms (Attempt ${retryCountRef.current}/${MAX_RETRIES})`);
+
                 reconnectTimeoutRef.current = setTimeout(() => {
                     connect();
-                }, 5000);
+                }, delay);
             };
 
             ws.onerror = (event) => {
-                console.error('WebSocket error occurred:', event);
+                // Only log error if not already closed (avoid duplicate logs)
+                if (ws.readyState !== WebSocket.CLOSED) {
+                    console.error('WebSocket error occurred:', event);
+                }
+
                 // Check if it's an authentication error or connection limit
                 if (ws.readyState === WebSocket.CLOSED) {
-                    console.error('WebSocket closed immediately. Check API key or connection limits.');
+                    // console.error('WebSocket closed immediately. Check API key or connection limits.');
                 }
                 ws.close();
             };

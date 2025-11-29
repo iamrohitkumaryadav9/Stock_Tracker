@@ -92,11 +92,7 @@ export default function ReportsClient({ transactions }: ReportsClientProps) {
 
     return (
         <div className="space-y-8 print:p-0 print:bg-white print:text-black">
-            <div className="flex items-center justify-between print:hidden">
-                <div>
-                    <h1 className="text-3xl font-bold mb-2">Financial Reports</h1>
-                    <p className="text-gray-400">View performance summaries and tax reports.</p>
-                </div>
+            <div className="flex items-center justify-end print:hidden mb-4">
                 <Button onClick={handlePrint} variant="outline" className="gap-2">
                     <Printer className="w-4 h-4" />
                     Print / Save PDF
