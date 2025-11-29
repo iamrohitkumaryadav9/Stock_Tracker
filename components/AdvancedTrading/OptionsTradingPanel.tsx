@@ -9,14 +9,15 @@ import { getOptionQuote } from '@/lib/actions/market-data.actions';
 import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, Loader2, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 interface OptionsTradingPanelProps {
   userId: string;
   underlyingSymbol?: string;
-  onTradeComplete?: () => void;
+  underlyingSymbol?: string;
 }
 
-export default function OptionsTradingPanel({ userId, underlyingSymbol = '', onTradeComplete }: OptionsTradingPanelProps) {
+export default function OptionsTradingPanel({ userId, underlyingSymbol = '' }: OptionsTradingPanelProps) {
   const [symbol, setSymbol] = useState(underlyingSymbol);
   const [strikePrice, setStrikePrice] = useState<string>('');
   const [expirationDate, setExpirationDate] = useState<string>('');
@@ -26,6 +27,7 @@ export default function OptionsTradingPanel({ userId, underlyingSymbol = '', onT
   const [loading, setLoading] = useState(false);
   const [fetchingQuote, setFetchingQuote] = useState(false);
   const [optionQuote, setOptionQuote] = useState<{ price: number; bid?: number; ask?: number } | null>(null);
+  const router = useRouter();
 
   const handleFetchQuote = async () => {
     if (!symbol.trim() || !strikePrice || !expirationDate) {
@@ -94,7 +96,7 @@ export default function OptionsTradingPanel({ userId, underlyingSymbol = '', onT
         toast.success(result.message);
         setQuantity('');
         setOptionQuote(null);
-        onTradeComplete?.();
+        router.refresh();
       } else {
         toast.error(result.message);
       }

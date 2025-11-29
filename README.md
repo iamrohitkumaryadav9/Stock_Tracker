@@ -1,7 +1,7 @@
-                Signalist - Stock Tracker Application
+# Quantis - Real-Time Stock Tracker Application
 
 Overview
-Signalist is a comprehensive stock tracking application built with Next.js 16.0.5, React 19, and TypeScript. It provides real-time stock price monitoring, personalized alerts, AI-powered insights, and detailed company analysis. The application features an intuitive dashboard with TradingView widgets, watchlist management, and automated email notifications for price alerts.
+Quantis is a comprehensive stock tracking application built with Next.js 16.0.5, React 19, and TypeScript. It provides real-time stock price monitoring, personalized alerts, AI-powered insights, and detailed company analysis. The application features an intuitive dashboard with TradingView widgets, watchlist management, and automated email notifications for price alerts.
 
 
 Features

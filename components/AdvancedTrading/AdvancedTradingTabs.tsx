@@ -11,10 +11,10 @@ import { cn } from '@/lib/utils';
 
 interface AdvancedTradingTabsProps {
   userId: string;
-  onTradeComplete?: () => void;
+  userId: string;
 }
 
-export default function AdvancedTradingTabs({ userId, onTradeComplete }: AdvancedTradingTabsProps) {
+export default function AdvancedTradingTabs({ userId }: AdvancedTradingTabsProps) {
   const [activeTab, setActiveTab] = useState<'stocks' | 'options' | 'crypto' | 'forex' | 'futures' | 'copy'>('stocks');
 
   const tabs = [
@@ -50,19 +50,19 @@ export default function AdvancedTradingTabs({ userId, onTradeComplete }: Advance
       {/* Tab Content */}
       <div className="p-6">
         {activeTab === 'stocks' && (
-          <TradingPanel symbol="" userId={userId} onTradeComplete={onTradeComplete} />
+          <TradingPanel symbol="" userId={userId} />
         )}
         {activeTab === 'options' && (
-          <OptionsTradingPanel userId={userId} onTradeComplete={onTradeComplete} />
+          <OptionsTradingPanel userId={userId} />
         )}
         {activeTab === 'crypto' && (
-          <CryptoTradingPanel userId={userId} onTradeComplete={onTradeComplete} />
+          <CryptoTradingPanel userId={userId} />
         )}
         {activeTab === 'forex' && (
-          <ForexTradingPanel userId={userId} onTradeComplete={onTradeComplete} />
+          <ForexTradingPanel userId={userId} />
         )}
         {activeTab === 'futures' && (
-          <FuturesTradingPanel userId={userId} onTradeComplete={onTradeComplete} />
+          <FuturesTradingPanel userId={userId} />
         )}
         {activeTab === 'copy' && (
           <CopyTradingPanel userId={userId} />

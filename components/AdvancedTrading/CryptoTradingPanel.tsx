@@ -8,20 +8,22 @@ import { executeCryptoTrade } from '@/lib/actions/advanced-trading.actions';
 import { getCryptoQuote } from '@/lib/actions/market-data.actions';
 import { toast } from 'sonner';
 import { Coins, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface CryptoTradingPanelProps {
   userId: string;
   symbol?: string;
-  onTradeComplete?: () => void;
+
 }
 
-export default function CryptoTradingPanel({ userId, symbol = '', onTradeComplete }: CryptoTradingPanelProps) {
+export default function CryptoTradingPanel({ userId, symbol = '' }: CryptoTradingPanelProps) {
   const [tradeSymbol, setTradeSymbol] = useState(symbol);
   const [quantity, setQuantity] = useState<string>('');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [loading, setLoading] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [price, setPrice] = useState<number | null>(null);
+  const router = useRouter();
 
   const handleFetchPrice = async () => {
     if (!tradeSymbol.trim()) {
@@ -75,7 +77,7 @@ export default function CryptoTradingPanel({ userId, symbol = '', onTradeComplet
         toast.success(result.message);
         setQuantity('');
         setPrice(null);
-        onTradeComplete?.();
+        router.refresh();
       } else {
         toast.error(result.message);
       }

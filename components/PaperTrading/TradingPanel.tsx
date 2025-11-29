@@ -13,10 +13,10 @@ import { useRouter } from 'next/navigation';
 interface TradingPanelProps {
   symbol: string;
   userId: string;
-  onTradeComplete?: () => void;
+  userId: string;
 }
 
-export default function TradingPanel({ symbol = '', userId, onTradeComplete }: TradingPanelProps) {
+export default function TradingPanel({ symbol = '', userId }: TradingPanelProps) {
   const [tradeSymbol, setTradeSymbol] = useState<string>(symbol);
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState<string>('');
@@ -66,12 +66,12 @@ export default function TradingPanel({ symbol = '', userId, onTradeComplete }: T
     setLoading(true);
     try {
       const result = await executeTrade(userId, tradeSymbol, tradeType, qty, price);
-      
+
       if (result.success) {
         toast.success(result.message);
         setQuantity('');
         setPrice(null);
-        onTradeComplete?.();
+
         router.refresh();
       } else {
         toast.error(result.message);
@@ -88,7 +88,7 @@ export default function TradingPanel({ symbol = '', userId, onTradeComplete }: T
   return (
     <div className="bg-gray-800 border border-gray-600 rounded-lg p-6">
       <h3 className="text-xl font-bold text-gray-100 mb-4">Paper Trading</h3>
-      
+
       <div className="space-y-4">
         <div>
           <Label htmlFor="symbol" className="text-gray-400 mb-2 block">Stock Symbol</Label>

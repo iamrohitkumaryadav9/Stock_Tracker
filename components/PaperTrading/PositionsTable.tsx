@@ -5,12 +5,42 @@ import RealTimeStockPrice from '../RealTimeStockPrice';
 import Link from 'next/link';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useWebSocket, StockQuote } from '@/hooks/useWebSocket';
+import { useState, useEffect } from 'react';
 
 interface PositionsTableProps {
   positions: PortfolioSummary['positions'];
 }
 
 export default function PositionsTable({ positions }: PositionsTableProps) {
+  const [quotes, setQuotes] = useState<Map<string, StockQuote>>(new Map());
+
+  // Get unique symbols from positions
+  const symbols = Array.from(new Set(positions.map(p => p.symbol)));
+
+  // WebSocket for real-time updates
+  const { quotes: wsQuotes } = useWebSocket({
+    symbols,
+    onMessage: (quote) => {
+      setQuotes(prev => {
+        const newMap = new Map(prev);
+        newMap.set(quote.symbol, quote);
+        return newMap;
+      });
+    }
+  });
+
+  // Update quotes from WebSocket
+  useEffect(() => {
+    wsQuotes.forEach((quote, symbol) => {
+      setQuotes(prev => {
+        const newMap = new Map(prev);
+        newMap.set(symbol, quote);
+        return newMap;
+      });
+    });
+  }, [wsQuotes]);
+
   if (positions.length === 0) {
     return (
       <div className="bg-gray-800 border border-gray-600 rounded-lg p-8 text-center">
@@ -45,7 +75,7 @@ export default function PositionsTable({ positions }: PositionsTableProps) {
                 futures: 'Futures',
                 options: 'Options'
               };
-              
+
               const assetTypeColors = {
                 stock: 'bg-blue-500/20 text-blue-400',
                 crypto: 'bg-yellow-500/20 text-yellow-400',
@@ -98,6 +128,10 @@ export default function PositionsTable({ positions }: PositionsTableProps) {
                         symbol={position.symbol}
                         initialPrice={position.currentPrice}
                         showIndicator={true}
+                        useWebSocket={false}
+                        currentPrice={quotes.get(position.symbol.toUpperCase())?.price}
+                        currentChange={quotes.get(position.symbol.toUpperCase())?.change}
+                        currentChangePercent={quotes.get(position.symbol.toUpperCase())?.changePercent}
                       />
                     ) : (
                       <span className="text-gray-100">

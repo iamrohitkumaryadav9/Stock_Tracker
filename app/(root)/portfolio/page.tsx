@@ -44,9 +44,6 @@ export default async function PortfolioPage() {
             <h2 className="text-xl font-semibold text-gray-100 mb-4">Advanced Trading</h2>
             <AdvancedTradingTabs 
               userId={userId}
-              onTradeComplete={() => {
-                // Refresh will be handled by router.refresh() in components
-              }}
             />
           </div>
         </div>

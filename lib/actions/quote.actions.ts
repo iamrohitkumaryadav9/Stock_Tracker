@@ -17,6 +17,7 @@ export interface StockQuote {
   volume?: number;
   marketCap?: number;
   peRatio?: number;
+  timestamp?: number;
 }
 
 export const getStockQuote = cache(async (symbol: string): Promise<StockQuote | null> => {
@@ -27,7 +28,7 @@ export const getStockQuote = cache(async (symbol: string): Promise<StockQuote | 
     }
 
     const url = `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol.toUpperCase())}&token=${FINNHUB_API_KEY}`;
-    
+
     const response = await fetch(url, {
       next: { revalidate: 60 } // Cache for 60 seconds
     });
@@ -57,7 +58,8 @@ export const getStockQuote = cache(async (symbol: string): Promise<StockQuote | 
       high: data.h,
       low: data.l,
       open: data.o,
-      volume: data.v
+      volume: data.v,
+      timestamp: Date.now()
     };
   } catch (error) {
     console.error(`Error fetching quote for ${symbol}:`, error);
@@ -67,7 +69,7 @@ export const getStockQuote = cache(async (symbol: string): Promise<StockQuote | 
 
 export const getStockQuotes = cache(async (symbols: string[]): Promise<Map<string, StockQuote>> => {
   const quotes = new Map<string, StockQuote>();
-  
+
   // Fetch quotes in parallel (limit to 10 at a time to avoid rate limits)
   const batches = [];
   for (let i = 0; i < symbols.length; i += 10) {

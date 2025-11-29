@@ -8,20 +8,22 @@ import { executeForexTrade } from '@/lib/actions/advanced-trading.actions';
 import { getForexQuote } from '@/lib/actions/market-data.actions';
 import { toast } from 'sonner';
 import { Globe, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface ForexTradingPanelProps {
   userId: string;
   pair?: string;
-  onTradeComplete?: () => void;
+
 }
 
-export default function ForexTradingPanel({ userId, pair = '', onTradeComplete }: ForexTradingPanelProps) {
+export default function ForexTradingPanel({ userId, pair = '' }: ForexTradingPanelProps) {
   const [tradePair, setTradePair] = useState(pair || 'EUR/USD');
   const [quantity, setQuantity] = useState<string>('');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [loading, setLoading] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [quote, setQuote] = useState<{ rate: number; bid?: number; ask?: number } | null>(null);
+  const router = useRouter();
 
   const handleFetchPrice = async () => {
     if (!tradePair.trim()) {
@@ -80,7 +82,7 @@ export default function ForexTradingPanel({ userId, pair = '', onTradeComplete }
         toast.success(result.message);
         setQuantity('');
         setQuote(null);
-        onTradeComplete?.();
+        router.refresh();
       } else {
         toast.error(result.message);
       }

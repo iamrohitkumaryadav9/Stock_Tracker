@@ -8,14 +8,15 @@ import { executeFuturesTrade } from '@/lib/actions/advanced-trading.actions';
 import { getFuturesQuote } from '@/lib/actions/market-data.actions';
 import { toast } from 'sonner';
 import { BarChart3, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface FuturesTradingPanelProps {
   userId: string;
   symbol?: string;
-  onTradeComplete?: () => void;
+
 }
 
-export default function FuturesTradingPanel({ userId, symbol = '', onTradeComplete }: FuturesTradingPanelProps) {
+export default function FuturesTradingPanel({ userId, symbol = '' }: FuturesTradingPanelProps) {
   const [tradeSymbol, setTradeSymbol] = useState(symbol || 'ES');
   const [contractMonth, setContractMonth] = useState<string>('');
   const [quantity, setQuantity] = useState<string>('');
@@ -23,6 +24,7 @@ export default function FuturesTradingPanel({ userId, symbol = '', onTradeComple
   const [loading, setLoading] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [quote, setQuote] = useState<{ price: number; contractSize: number } | null>(null);
+  const router = useRouter();
 
   // Set default contract month to next month
   const defaultMonth = new Date();
@@ -82,7 +84,7 @@ export default function FuturesTradingPanel({ userId, symbol = '', onTradeComple
         toast.success(result.message);
         setQuantity('');
         setQuote(null);
-        onTradeComplete?.();
+        router.refresh();
       } else {
         toast.error(result.message);
       }

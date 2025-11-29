@@ -11,6 +11,10 @@ interface RealTimeStockPriceProps {
   initialChangePercent?: number;
   className?: string;
   showIndicator?: boolean;
+  useWebSocket?: boolean;
+  currentPrice?: number;
+  currentChange?: number;
+  currentChangePercent?: number;
 }
 
 export default function RealTimeStockPrice({
@@ -18,8 +22,13 @@ export default function RealTimeStockPrice({
   initialPrice,
   initialChange,
   initialChangePercent,
+
   className,
-  showIndicator = true
+  showIndicator = true,
+  useWebSocket: enableWebSocket = true,
+  currentPrice,
+  currentChange,
+  currentChangePercent
 }: RealTimeStockPriceProps) {
   const [currentQuote, setCurrentQuote] = useState<StockQuote | null>(null);
   const [priceChange, setPriceChange] = useState<'up' | 'down' | 'neutral'>('neutral');
@@ -38,7 +47,8 @@ export default function RealTimeStockPrice({
           setPriceChange('neutral');
         }
       }
-    }
+    },
+    enabled: enableWebSocket
   });
 
   // Update from quotes map
@@ -49,9 +59,9 @@ export default function RealTimeStockPrice({
     }
   }, [quotes, symbol]);
 
-  const displayPrice = currentQuote?.price ?? initialPrice ?? 0;
-  const displayChange = currentQuote?.change ?? initialChange ?? 0;
-  const displayChangePercent = currentQuote?.changePercent ?? initialChangePercent ?? 0;
+  const displayPrice = currentPrice ?? currentQuote?.price ?? initialPrice ?? 0;
+  const displayChange = currentChange ?? currentQuote?.change ?? initialChange ?? 0;
+  const displayChangePercent = currentChangePercent ?? currentQuote?.changePercent ?? initialChangePercent ?? 0;
 
   const isPositive = displayChange >= 0;
   const priceColor = isPositive ? 'text-green-500' : 'text-red-500';

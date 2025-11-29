@@ -31,7 +31,15 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
 
       try {
         const initialQuotes = await getStockQuotes(symbols);
-        setQuotes(initialQuotes);
+        // Convert to Map compatible with useWebSocket StockQuote
+        const quotesMap = new Map<string, StockQuote>();
+        initialQuotes.forEach((quote, symbol) => {
+          quotesMap.set(symbol, {
+            ...quote,
+            timestamp: quote.timestamp || Date.now()
+          });
+        });
+        setQuotes(quotesMap);
       } catch (error) {
         console.error('Error fetching initial quotes:', error);
       } finally {
@@ -48,7 +56,14 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
     onMessage: (quote) => {
       setQuotes(prev => {
         const newMap = new Map(prev);
-        newMap.set(quote.symbol, quote);
+        // Merge existing quote data (like marketCap) with new real-time data
+        const existingQuote = newMap.get(quote.symbol);
+        newMap.set(quote.symbol, {
+          ...existingQuote,
+          ...quote,
+          // Preserve marketCap if it exists in existing quote but not in new quote
+          marketCap: existingQuote?.marketCap
+        });
         return newMap;
       });
     }
@@ -102,7 +117,7 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
             return (
               <tr key={`${item.userId}-${item.symbol}`} className="table-row">
                 <td className="table-cell pl-4 py-3">
-                  <Link 
+                  <Link
                     href={`/stocks/${item.symbol}`}
                     className="hover:text-yellow-500 transition-colors"
                   >
@@ -110,7 +125,7 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
                   </Link>
                 </td>
                 <td className="table-cell py-3">
-                  <Link 
+                  <Link
                     href={`/stocks/${item.symbol}`}
                     className="hover:text-yellow-500 transition-colors font-mono"
                   >
@@ -127,6 +142,10 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
                       initialChange={change}
                       initialChangePercent={changePercent}
                       showIndicator={true}
+                      useWebSocket={false}
+                      currentPrice={price}
+                      currentChange={change}
+                      currentChangePercent={changePercent}
                     />
                   )}
                 </td>
