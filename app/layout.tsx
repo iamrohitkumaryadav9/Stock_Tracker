@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner"
 import { WebSocketProvider } from "@/components/providers/WebSocketProvider";
+import QuantisBot from "@/components/AI/QuantisBot";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,6 +36,7 @@ export default function RootLayout({
       >
         <WebSocketProvider>
           {children}
+          <QuantisBot />
           <Toaster />
         </WebSocketProvider>
       </body>

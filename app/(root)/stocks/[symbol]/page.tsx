@@ -8,6 +8,7 @@ import SentimentAnalysis from "@/components/AI/SentimentAnalysis";
 import PatternRecognition from "@/components/AI/PatternRecognition";
 import RiskAssessment from "@/components/AI/RiskAssessment";
 import TradingSignals from "@/components/AI/TradingSignals";
+import NewsSentiment from "@/components/AI/NewsSentiment";
 import { getStockQuote } from "@/lib/actions/quote.actions";
 import { getPosts } from "@/lib/actions/social.actions";
 import { auth } from '@/lib/better-auth/auth';
@@ -107,6 +108,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
           <div className="mt-6">
             <h2 className="text-xl font-semibold text-gray-100 mb-4">AI Analysis</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+              <NewsSentiment symbol={symbol} />
               <SentimentAnalysis symbol={symbol} />
               <PatternRecognition symbol={symbol} />
               <RiskAssessment symbol={symbol} />

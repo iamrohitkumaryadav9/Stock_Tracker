@@ -3,6 +3,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getStockQuote } from './quote.actions';
 import { getPosts } from './social.actions';
+import { getNews } from './finnhub.actions';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
@@ -14,12 +15,12 @@ async function getAvailableModels(apiKey: string): Promise<string[]> {
       `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
       { method: 'GET' }
     );
-    
+
     if (!response.ok) {
       console.warn('Could not fetch available models:', response.statusText);
       return [];
     }
-    
+
     const data = await response.json();
     if (data.models && Array.isArray(data.models)) {
       return data.models
@@ -36,7 +37,7 @@ async function getAvailableModels(apiKey: string): Promise<string[]> {
 // Helper function to generate content with model fallback
 async function generateContentWithFallback(prompt: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  
+
   // Try to get list of available models from the API
   let availableModels: string[] = [];
   try {
@@ -47,7 +48,7 @@ async function generateContentWithFallback(prompt: string): Promise<string> {
   } catch (error) {
     console.warn('Could not fetch available models, will try common models');
   }
-  
+
   // Build list of models to try
   const primaryModelName = GEMINI_MODEL;
   const commonModels = [
@@ -55,12 +56,12 @@ async function generateContentWithFallback(prompt: string): Promise<string> {
     'gemini-1.5-pro',
     'gemini-pro',
   ];
-  
+
   // If we got available models from API, prioritize those
   let modelsToTry: string[];
   if (availableModels.length > 0) {
     const otherAvailable = availableModels.filter(m => m !== primaryModelName);
-    modelsToTry = [primaryModelName, ...otherAvailable].filter(m => 
+    modelsToTry = [primaryModelName, ...otherAvailable].filter(m =>
       availableModels.includes(m) || commonModels.includes(m)
     );
     if (!availableModels.includes(primaryModelName)) {
@@ -70,13 +71,13 @@ async function generateContentWithFallback(prompt: string): Promise<string> {
     const otherModels = commonModels.filter(m => m !== primaryModelName);
     modelsToTry = [primaryModelName, ...otherModels];
   }
-  
+
   console.log(`Will try models in order: ${modelsToTry.join(', ')}`);
-  
+
   // Try each model until one works
   let result;
   let lastError: Error | null = null;
-  
+
   for (const modelName of modelsToTry) {
     try {
       console.log(`Attempting to use model: ${modelName}`);
@@ -87,14 +88,14 @@ async function generateContentWithFallback(prompt: string): Promise<string> {
     } catch (apiError) {
       const apiErrorMessage = apiError instanceof Error ? apiError.message : String(apiError);
       lastError = apiError instanceof Error ? apiError : new Error(String(apiError));
-      
+
       console.warn(`Model ${modelName} failed:`, apiErrorMessage);
-      
+
       // If it's a model-specific error (404, model not found), try next model
       if (apiErrorMessage.includes('model') || apiErrorMessage.includes('not found') || apiErrorMessage.includes('404')) {
         continue;
       }
-      
+
       // For other errors, throw immediately (API key, quota, etc.)
       if (apiErrorMessage.includes('API_KEY') || apiErrorMessage.includes('authentication')) {
         throw new Error('Invalid or missing Gemini API key. Please check your GEMINI_API_KEY environment variable.');
@@ -111,24 +112,24 @@ async function generateContentWithFallback(prompt: string): Promise<string> {
       }
     }
   }
-  
+
   // If we get here and result is still undefined, all models failed
   if (!result) {
     throw new Error(
       `Unable to generate content with any model. Tried: ${modelsToTry.join(', ')}. Last error: ${lastError?.message || 'Unknown error'}`
     );
   }
-  
+
   const response = result.response;
   if (!response) {
     throw new Error('No response received from Gemini API');
   }
-  
+
   const text = response.text();
   if (!text || text.trim() === '') {
     throw new Error('Empty response received from Gemini API');
   }
-  
+
   return text;
 }
 
@@ -537,3 +538,128 @@ Only respond with valid JSON, no additional text.`;
   }
 }
 
+
+// ==================== PORTFOLIO OPTIMIZATION ====================
+
+export interface PortfolioOptimization {
+  recommendations: {
+    symbol: string;
+    action: 'buy' | 'sell' | 'hold';
+    quantity?: number;
+    reason: string;
+  }[];
+  analysis: string;
+  riskScore: number;
+  timestamp: Date;
+}
+
+export async function optimizePortfolio(positions: any[]): Promise<PortfolioOptimization | null> {
+  try {
+    if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '') {
+      throw new Error('GEMINI_API_KEY is not configured');
+    }
+
+    const positionsSummary = positions.map(p =>
+      `- ${p.symbol}: ${p.quantity} shares @ $${p.averagePrice.toFixed(2)} (Current: $${p.currentPrice.toFixed(2)})`
+    ).join('\n');
+
+    const prompt = `Analyze this portfolio and suggest optimization strategies:
+    
+Portfolio:
+${positionsSummary}
+
+Provide a JSON response with:
+{
+  "recommendations": [
+    { "symbol": "AAPL", "action": "buy" | "sell" | "hold", "quantity": 10, "reason": "..." }
+  ],
+  "analysis": "Overall portfolio analysis...",
+  "riskScore": 0-100
+}`;
+
+    const text = await generateContentWithFallback(prompt);
+
+    // Parse JSON safely
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/```\s*([\s\S]*?)\s*```/) || [null, text];
+    const jsonText = jsonMatch[1] || text;
+    const data = JSON.parse(jsonText.trim());
+
+    return {
+      recommendations: data.recommendations || [],
+      analysis: data.analysis || 'Analysis failed',
+      riskScore: data.riskScore || 50,
+      timestamp: new Date()
+    };
+  } catch (error) {
+    console.error('Error optimizing portfolio:', error);
+    return null;
+  }
+}
+
+// ==================== NEWS SENTIMENT ====================
+
+export interface NewsSentimentAnalysis {
+  symbol: string;
+  score: number; // -100 to 100
+  summary: string;
+  articles: { headline: string; sentiment: 'bullish' | 'bearish' | 'neutral' }[];
+  timestamp: Date;
+}
+
+export async function analyzeNewsSentiment(symbol: string): Promise<NewsSentimentAnalysis | null> {
+  try {
+    const articles = await getNews([symbol]);
+    if (!articles || articles.length === 0) return null;
+
+    const newsText = articles.slice(0, 5).map(a => `- ${a.headline}: ${a.summary}`).join('\n');
+
+    const prompt = `Analyze the sentiment of these news articles for ${symbol}:
+
+${newsText}
+
+Provide a JSON response with:
+{
+  "score": -100 (very bearish) to 100 (very bullish),
+  "summary": "Brief summary of news sentiment...",
+  "articles": [
+    { "headline": "...", "sentiment": "bullish" | "bearish" | "neutral" }
+  ]
+}`;
+
+    const text = await generateContentWithFallback(prompt);
+
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/```\s*([\s\S]*?)\s*```/) || [null, text];
+    const jsonText = jsonMatch[1] || text;
+    const data = JSON.parse(jsonText.trim());
+
+    return {
+      symbol,
+      score: data.score || 0,
+      summary: data.summary || 'No sentiment available',
+      articles: data.articles || [],
+      timestamp: new Date()
+    };
+  } catch (error) {
+    console.error('Error analyzing news sentiment:', error);
+    return null;
+  }
+}
+
+// ==================== CHAT WITH DATA ====================
+
+export async function chatWithData(message: string, context?: any): Promise<string> {
+  try {
+    const contextStr = context ? `Context: ${JSON.stringify(context)}` : '';
+    const prompt = `You are Quantis Bot, a financial assistant. Answer the user's question.
+    
+${contextStr}
+
+User: ${message}
+Bot:`;
+
+    return await generateContentWithFallback(prompt);
+  } catch (error) {
+    console.error('Error in chat with data:', error);
+    return "I'm having trouble processing your request right now.";
+  }
+}
