@@ -11,6 +11,10 @@ export const NAV_ITEMS = [
     { href: '/social', label: 'Community' },
     { href: '/discovery', label: 'Discovery' },
     { href: '/search', label: 'Search' },
+    { href: '/charts', label: 'Charts' },
+    { href: '/tools/screener', label: 'Screener' },
+    { href: '/tools/heatmap', label: 'Heatmap' },
+    { href: '/integrations', label: 'Integrations' },
 ];
 
 // Sign-up form select options
