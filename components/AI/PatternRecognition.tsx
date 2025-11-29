@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { recognizePatterns, PatternRecognition } from '@/lib/actions/ai-analysis.actions';
+import { recognizePatterns } from '@/lib/actions/ai-analysis.actions';
+import type { PatternRecognition } from '@/lib/actions/ai-analysis.actions';
 import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, Minus, Brain, Loader2, BarChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,7 +25,7 @@ export default function PatternRecognition({ symbol, className }: PatternRecogni
 
     setLoading(true);
     setAnalysis(null);
-    
+
     try {
       const result = await recognizePatterns(symbol);
       if (result) {
@@ -165,6 +166,14 @@ export default function PatternRecognition({ symbol, className }: PatternRecogni
           <div className="text-xs text-gray-500 text-center">
             ⚠️ Pattern recognition is for informational purposes only. Not financial advice.
           </div>
+
+          <Button
+            variant="ghost"
+            onClick={() => setAnalysis(null)}
+            className="w-full text-gray-400 hover:text-gray-100 hover:bg-gray-700"
+          >
+            Collapse Analysis
+          </Button>
         </div>
       )}
     </div>

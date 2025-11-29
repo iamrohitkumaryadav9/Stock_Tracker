@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { generateTradingSignals, TradingSignals } from '@/lib/actions/ai-analysis.actions';
+import { generateTradingSignals } from '@/lib/actions/ai-analysis.actions';
+import type { TradingSignals } from '@/lib/actions/ai-analysis.actions';
 import { toast } from 'sonner';
 import { ArrowUp, ArrowDown, Minus, Brain, Loader2, Signal } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,7 +25,7 @@ export default function TradingSignals({ symbol, className }: TradingSignalsProp
 
     setLoading(true);
     setSignals(null);
-    
+
     try {
       const result = await generateTradingSignals(symbol);
       if (result) {
@@ -154,9 +155,9 @@ export default function TradingSignals({ symbol, className }: TradingSignalsProp
                       <span className="text-gray-500 text-xs">{getTimeframeLabel(signal.timeframe)}</span>
                     </div>
                   </div>
-                  
+
                   <p className="text-gray-300 text-sm mb-2">{signal.reasoning}</p>
-                  
+
                   {(signal.entryPrice || signal.targetPrice || signal.stopLoss) && (
                     <div className="flex gap-4 mt-2 text-xs pt-2 border-t border-gray-600">
                       {signal.entryPrice && (
@@ -197,6 +198,14 @@ export default function TradingSignals({ symbol, className }: TradingSignalsProp
           <div className="text-xs text-gray-500 text-center">
             ⚠️ Trading signals are for informational purposes only. Not financial advice.
           </div>
+
+          <Button
+            variant="ghost"
+            onClick={() => setSignals(null)}
+            className="w-full text-gray-400 hover:text-gray-100 hover:bg-gray-700"
+          >
+            Collapse Analysis
+          </Button>
         </div>
       )}
     </div>

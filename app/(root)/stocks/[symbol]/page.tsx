@@ -24,14 +24,14 @@ import {
 export default async function StockDetails({ params }: StockDetailsPageProps) {
   const { symbol } = await params;
   const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
-  
+
   // Get current user session
   const session = await auth.api.getSession({ headers: await headers() });
   const currentUserId = session?.user?.id;
-  
+
   // Fetch initial quote for the stock
   const initialQuote = await getStockQuote(symbol);
-  
+
   // Fetch social posts for this symbol
   const socialPosts = await getPosts(symbol, 10);
 
@@ -106,7 +106,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
           {/* AI Analysis Section */}
           <div className="mt-6">
             <h2 className="text-xl font-semibold text-gray-100 mb-4">AI Analysis</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
               <SentimentAnalysis symbol={symbol} />
               <PatternRecognition symbol={symbol} />
               <RiskAssessment symbol={symbol} />

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { analyzeSentiment, SentimentAnalysis } from '@/lib/actions/ai-analysis.actions';
+import { analyzeSentiment } from '@/lib/actions/ai-analysis.actions';
+import type { SentimentAnalysis } from '@/lib/actions/ai-analysis.actions';
 import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, Minus, Brain, Loader2, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,7 +25,7 @@ export default function SentimentAnalysis({ symbol, className }: SentimentAnalys
 
     setLoading(true);
     setAnalysis(null);
-    
+
     try {
       const result = await analyzeSentiment(symbol);
       if (result) {
@@ -166,6 +167,14 @@ export default function SentimentAnalysis({ symbol, className }: SentimentAnalys
           <div className="text-xs text-gray-500 text-center">
             ⚠️ Sentiment analysis is for informational purposes only. Not financial advice.
           </div>
+
+          <Button
+            variant="ghost"
+            onClick={() => setAnalysis(null)}
+            className="w-full text-gray-400 hover:text-gray-100 hover:bg-gray-700"
+          >
+            Collapse Analysis
+          </Button>
         </div>
       )}
     </div>

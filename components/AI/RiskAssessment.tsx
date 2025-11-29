@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { assessRisk, RiskAssessment } from '@/lib/actions/ai-analysis.actions';
+import { assessRisk } from '@/lib/actions/ai-analysis.actions';
+import type { RiskAssessment } from '@/lib/actions/ai-analysis.actions';
 import { toast } from 'sonner';
 import { AlertTriangle, Shield, Brain, Loader2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,7 +26,7 @@ export default function RiskAssessment({ symbol, portfolioSymbols, className }: 
 
     setLoading(true);
     setAssessment(null);
-    
+
     try {
       const result = await assessRisk(symbol, portfolioSymbols);
       if (result) {
@@ -203,6 +204,14 @@ export default function RiskAssessment({ symbol, portfolioSymbols, className }: 
           <div className="text-xs text-gray-500 text-center">
             ⚠️ Risk assessment is for informational purposes only. Not financial advice.
           </div>
+
+          <Button
+            variant="ghost"
+            onClick={() => setAssessment(null)}
+            className="w-full text-gray-400 hover:text-gray-100 hover:bg-gray-700"
+          >
+            Collapse Analysis
+          </Button>
         </div>
       )}
     </div>
