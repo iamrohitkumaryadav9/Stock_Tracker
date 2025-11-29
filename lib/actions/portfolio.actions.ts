@@ -9,6 +9,8 @@ import { getStockQuotes } from './quote.actions';
 import { getCryptoQuote, getForexQuote, getFuturesQuote, getOptionQuote } from './market-data.actions';
 
 export interface PortfolioSummary {
+  _id: string;
+  name: string;
   cashBalance: number;
   totalInvested: number;
   currentValue: number;
@@ -37,30 +39,88 @@ export interface PortfolioSummary {
   }>;
 }
 
-export async function getPortfolio(userId: string): Promise<PortfolioSummary | null> {
+export async function getPortfolios(userId: string) {
+  try {
+    const mongoose = await connectToDatabase();
+    const db = mongoose.connection.db;
+    if (!db) throw new Error('MongoDB connection not found');
+
+    const portfolios = await Portfolio.find({ userId }).sort({ createdAt: 1 });
+    return JSON.parse(JSON.stringify(portfolios));
+  } catch (error) {
+    console.error('Error getting portfolios:', error);
+    return [];
+  }
+}
+
+export async function createPortfolio(userId: string, name: string) {
+  try {
+    const mongoose = await connectToDatabase();
+    const db = mongoose.connection.db;
+    if (!db) throw new Error('MongoDB connection not found');
+
+    const portfolio = await Portfolio.create({
+      userId,
+      name,
+      cashBalance: 100000,
+      totalValue: 100000
+    });
+
+    return JSON.parse(JSON.stringify(portfolio));
+  } catch (error) {
+    console.error('Error creating portfolio:', error);
+    return null;
+  }
+}
+
+export async function getPortfolio(userId: string, portfolioId?: string): Promise<PortfolioSummary | null> {
   try {
     const mongoose = await connectToDatabase();
     const db = mongoose.connection.db;
     if (!db) throw new Error('MongoDB connection not found');
 
     // Get or create portfolio
-    let portfolio = await Portfolio.findOne({ userId });
-    if (!portfolio) {
-      portfolio = await Portfolio.create({
-        userId,
-        cashBalance: 100000,
-        totalValue: 100000
-      });
+    let portfolio;
+    if (portfolioId) {
+      portfolio = await Portfolio.findOne({ _id: portfolioId, userId });
+    } else {
+      // Find default or first
+      portfolio = await Portfolio.findOne({ userId }).sort({ createdAt: 1 });
     }
 
-    // Get all positions (both old Position model and new AdvancedPosition model)
+    if (!portfolio) {
+      if (!portfolioId) {
+        portfolio = await Portfolio.create({
+          userId,
+          name: 'Main Portfolio',
+          cashBalance: 100000,
+          totalValue: 100000
+        });
+      } else {
+        return null;
+      }
+    }
+
+    // Get positions for this specific portfolio
+    // For backward compatibility, if positions have no portfolioId, we assume they belong to the first portfolio
+    const isFirstPortfolio = (await Portfolio.findOne({ userId }).sort({ createdAt: 1 }).select('_id'))?._id.toString() === portfolio._id.toString();
+
+    const positionQuery: any = { userId };
+    if (isFirstPortfolio) {
+      positionQuery.$or = [{ portfolioId: portfolio._id }, { portfolioId: { $exists: false } }];
+    } else {
+      positionQuery.portfolioId = portfolio._id;
+    }
+
     const [stockPositions, advancedPositions] = await Promise.all([
-      Position.find({ userId }).lean(),
-      AdvancedPosition.find({ userId }).lean()
+      Position.find(positionQuery).lean(),
+      AdvancedPosition.find(positionQuery).lean()
     ]);
 
     if (stockPositions.length === 0 && advancedPositions.length === 0) {
       return {
+        _id: portfolio._id.toString(),
+        name: portfolio.name,
         cashBalance: portfolio.cashBalance,
         totalInvested: 0,
         currentValue: portfolio.cashBalance,
@@ -173,6 +233,8 @@ export async function getPortfolio(userId: string): Promise<PortfolioSummary | n
     const totalReturnPercent = (totalReturn / 100000) * 100;
 
     return {
+      _id: portfolio._id.toString(),
+      name: portfolio.name,
       cashBalance: portfolio.cashBalance,
       totalInvested,
       currentValue,
@@ -194,7 +256,8 @@ export async function executeTrade(
   price: number,
   orderType: 'market' | 'limit' | 'stop' | 'stop_limit' | 'trailing_stop' = 'market',
   limitPrice?: number,
-  stopPrice?: number
+  stopPrice?: number,
+  portfolioId?: string
 ): Promise<{ success: boolean; message: string; portfolio?: PortfolioSummary }> {
   try {
     const mongoose = await connectToDatabase();
@@ -204,13 +267,27 @@ export async function executeTrade(
     const totalAmount = quantity * price;
 
     // Get or create portfolio
-    let portfolio = await Portfolio.findOne({ userId });
+    let portfolio;
+    if (portfolioId) {
+      portfolio = await Portfolio.findOne({ _id: portfolioId, userId });
+    } else {
+      portfolio = await Portfolio.findOne({ userId }).sort({ createdAt: 1 });
+    }
+
     if (!portfolio) {
-      portfolio = await Portfolio.create({
-        userId,
-        cashBalance: 100000,
-        totalValue: 100000
-      });
+      if (!portfolioId) {
+        portfolio = await Portfolio.create({
+          userId,
+          name: 'Main Portfolio',
+          cashBalance: 100000,
+          totalValue: 100000
+        });
+      } else {
+        return {
+          success: false,
+          message: 'Portfolio not found'
+        };
+      }
     }
 
     if (type === 'buy') {
@@ -227,7 +304,7 @@ export async function executeTrade(
       await portfolio.save();
 
       // Update or create position
-      const existingPosition = await Position.findOne({ userId, symbol });
+      const existingPosition = await Position.findOne({ userId, portfolioId: portfolio._id, symbol });
       if (existingPosition) {
         // Calculate new average price
         const newTotalCost = existingPosition.totalCost + totalAmount;
@@ -241,6 +318,7 @@ export async function executeTrade(
       } else {
         await Position.create({
           userId,
+          portfolioId: portfolio._id,
           symbol: symbol.toUpperCase(),
           quantity,
           averagePrice: price,
@@ -249,11 +327,21 @@ export async function executeTrade(
       }
     } else {
       // Sell
-      const position = await Position.findOne({ userId, symbol: symbol.toUpperCase() });
+      // Try to find position in specific portfolio first
+      let position = await Position.findOne({ userId, portfolioId: portfolio._id, symbol: symbol.toUpperCase() });
+
+      // Fallback for legacy positions if this is the main portfolio
+      if (!position) {
+        const isFirstPortfolio = (await Portfolio.findOne({ userId }).sort({ createdAt: 1 }).select('_id'))?._id.toString() === portfolio._id.toString();
+        if (isFirstPortfolio) {
+          position = await Position.findOne({ userId, symbol: symbol.toUpperCase(), portfolioId: { $exists: false } });
+        }
+      }
+
       if (!position) {
         return {
           success: false,
-          message: `You don't own any shares of ${symbol}`
+          message: `You don't own any shares of ${symbol} in this portfolio`
         };
       }
 
@@ -277,6 +365,10 @@ export async function executeTrade(
         position.quantity -= quantity;
         // For simplicity, we keep the average price the same (FIFO would be more accurate)
         position.totalCost = position.averagePrice * position.quantity;
+        // Ensure portfolioId is set if it was missing
+        if (!position.portfolioId) {
+          position.portfolioId = portfolio._id;
+        }
         await position.save();
       }
     }
@@ -307,7 +399,7 @@ export async function executeTrade(
     }
 
     // Get updated portfolio
-    const updatedPortfolio = await getPortfolio(userId);
+    const updatedPortfolio = await getPortfolio(userId, portfolio._id.toString());
 
     return {
       success: true,
@@ -361,4 +453,3 @@ export async function getTransactionHistory(
     return [];
   }
 }
-

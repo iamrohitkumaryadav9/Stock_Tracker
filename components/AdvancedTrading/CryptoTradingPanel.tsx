@@ -13,10 +13,10 @@ import { useRouter } from 'next/navigation';
 interface CryptoTradingPanelProps {
   userId: string;
   symbol?: string;
-
+  portfolioId?: string;
 }
 
-export default function CryptoTradingPanel({ userId, symbol = '' }: CryptoTradingPanelProps) {
+export default function CryptoTradingPanel({ userId, symbol = '', portfolioId }: CryptoTradingPanelProps) {
   const [tradeSymbol, setTradeSymbol] = useState(symbol);
   const [quantity, setQuantity] = useState<string>('');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
@@ -70,7 +70,8 @@ export default function CryptoTradingPanel({ userId, symbol = '' }: CryptoTradin
         userId,
         symbol: tradeSymbol,
         quantity: qty,
-        type: tradeType
+        type: tradeType,
+        portfolioId
       });
 
       if (result.success) {

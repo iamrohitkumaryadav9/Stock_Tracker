@@ -13,10 +13,10 @@ import { useRouter } from 'next/navigation';
 interface ForexTradingPanelProps {
   userId: string;
   pair?: string;
-
+  portfolioId?: string;
 }
 
-export default function ForexTradingPanel({ userId, pair = '' }: ForexTradingPanelProps) {
+export default function ForexTradingPanel({ userId, pair = '', portfolioId }: ForexTradingPanelProps) {
   const [tradePair, setTradePair] = useState(pair || 'EUR/USD');
   const [quantity, setQuantity] = useState<string>('');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
@@ -75,7 +75,8 @@ export default function ForexTradingPanel({ userId, pair = '' }: ForexTradingPan
         userId,
         pair: tradePair,
         quantity: qty,
-        type: tradeType
+        type: tradeType,
+        portfolioId
       });
 
       if (result.success) {

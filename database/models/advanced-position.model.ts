@@ -3,6 +3,7 @@ import { Schema, model, models, type Document, type Model } from 'mongoose';
 // Base position interface
 export interface AdvancedPosition extends Document {
   userId: string;
+  portfolioId?: any;
   assetType: 'stock' | 'crypto' | 'forex' | 'futures' | 'options';
   symbol: string;
   quantity: number;
@@ -27,9 +28,10 @@ export interface AdvancedPosition extends Document {
 const AdvancedPositionSchema = new Schema<AdvancedPosition>(
   {
     userId: { type: String, required: true, index: true },
-    assetType: { 
-      type: String, 
-      required: true, 
+    portfolioId: { type: Schema.Types.ObjectId, ref: 'Portfolio', index: true },
+    assetType: {
+      type: String,
+      required: true,
       enum: ['stock', 'crypto', 'forex', 'futures', 'options'],
       index: true
     },
@@ -54,13 +56,13 @@ const AdvancedPositionSchema = new Schema<AdvancedPosition>(
 );
 
 // Compound index to prevent duplicate positions
-AdvancedPositionSchema.index({ userId: 1, assetType: 1, symbol: 1, strikePrice: 1, expirationDate: 1 }, { unique: true });
+AdvancedPositionSchema.index({ userId: 1, portfolioId: 1, assetType: 1, symbol: 1, strikePrice: 1, expirationDate: 1 }, { unique: true });
 
 // Indexes for efficient queries
 AdvancedPositionSchema.index({ userId: 1, assetType: 1 });
 AdvancedPositionSchema.index({ userId: 1, createdAt: -1 });
 
 export const AdvancedPosition: Model<AdvancedPosition> =
-  (models?.AdvancedPosition as Model<AdvancedPosition>) || 
+  (models?.AdvancedPosition as Model<AdvancedPosition>) ||
   model<AdvancedPosition>('AdvancedPosition', AdvancedPositionSchema);
 

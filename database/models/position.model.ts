@@ -2,6 +2,7 @@ import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 export interface Position extends Document {
   userId: string;
+  portfolioId?: any; // Using any to avoid import issues, or ObjectId
   symbol: string;
   quantity: number;
   averagePrice: number;
@@ -13,6 +14,7 @@ export interface Position extends Document {
 const PositionSchema = new Schema<Position>(
   {
     userId: { type: String, required: true, index: true },
+    portfolioId: { type: Schema.Types.ObjectId, ref: 'Portfolio', index: true },
     symbol: { type: String, required: true, uppercase: true, trim: true },
     quantity: { type: Number, required: true, min: 0 },
     averagePrice: { type: Number, required: true, min: 0 },
@@ -21,8 +23,8 @@ const PositionSchema = new Schema<Position>(
   { timestamps: true }
 );
 
-// Prevent duplicate positions per user
-PositionSchema.index({ userId: 1, symbol: 1 }, { unique: true });
+// Prevent duplicate positions per user per portfolio
+PositionSchema.index({ userId: 1, portfolioId: 1, symbol: 1 }, { unique: true });
 
 export const Position: Model<Position> =
   (models?.Position as Model<Position>) || model<Position>('Position', PositionSchema);

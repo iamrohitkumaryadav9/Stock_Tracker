@@ -14,10 +14,10 @@ import { useRouter } from 'next/navigation';
 interface OptionsTradingPanelProps {
   userId: string;
   underlyingSymbol?: string;
-  underlyingSymbol?: string;
+  portfolioId?: string;
 }
 
-export default function OptionsTradingPanel({ userId, underlyingSymbol = '' }: OptionsTradingPanelProps) {
+export default function OptionsTradingPanel({ userId, underlyingSymbol = '', portfolioId }: OptionsTradingPanelProps) {
   const [symbol, setSymbol] = useState(underlyingSymbol);
   const [strikePrice, setStrikePrice] = useState<string>('');
   const [expirationDate, setExpirationDate] = useState<string>('');
@@ -89,7 +89,8 @@ export default function OptionsTradingPanel({ userId, underlyingSymbol = '' }: O
         expirationDate,
         optionType,
         quantity: qty,
-        type: tradeType
+        type: tradeType,
+        portfolioId
       });
 
       if (result.success) {
@@ -279,4 +280,3 @@ export default function OptionsTradingPanel({ userId, underlyingSymbol = '' }: O
     </div>
   );
 }
-

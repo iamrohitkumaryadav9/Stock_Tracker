@@ -13,9 +13,10 @@ import { useRouter } from 'next/navigation';
 interface TradingPanelProps {
   symbol: string;
   userId: string;
+  portfolioId?: string;
 }
 
-export default function TradingPanel({ symbol = '', userId }: TradingPanelProps) {
+export default function TradingPanel({ symbol = '', userId, portfolioId }: TradingPanelProps) {
   const [tradeSymbol, setTradeSymbol] = useState<string>(symbol);
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState<string>('');
@@ -75,7 +76,8 @@ export default function TradingPanel({ symbol = '', userId }: TradingPanelProps)
         price,
         orderType,
         limitPrice ? parseFloat(limitPrice) : undefined,
-        stopPrice ? parseFloat(stopPrice) : undefined
+        stopPrice ? parseFloat(stopPrice) : undefined,
+        portfolioId
       );
 
       if (result.success) {

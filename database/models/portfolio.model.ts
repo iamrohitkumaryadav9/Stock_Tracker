@@ -2,6 +2,7 @@ import { Schema, model, models, type Document, type Model } from 'mongoose';
 
 export interface Portfolio extends Document {
   userId: string;
+  name: string;
   cashBalance: number;
   totalValue: number;
   createdAt: Date;
@@ -10,7 +11,8 @@ export interface Portfolio extends Document {
 
 const PortfolioSchema = new Schema<Portfolio>(
   {
-    userId: { type: String, required: true, unique: true, index: true },
+    userId: { type: String, required: true, index: true },
+    name: { type: String, required: true, default: 'Main Portfolio' },
     cashBalance: { type: Number, required: true, default: 100000 }, // Starting with $100,000 virtual cash
     totalValue: { type: Number, required: true, default: 100000 },
   },

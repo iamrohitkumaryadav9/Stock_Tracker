@@ -13,10 +13,10 @@ import { useRouter } from 'next/navigation';
 interface FuturesTradingPanelProps {
   userId: string;
   symbol?: string;
-
+  portfolioId?: string;
 }
 
-export default function FuturesTradingPanel({ userId, symbol = '' }: FuturesTradingPanelProps) {
+export default function FuturesTradingPanel({ userId, symbol = '', portfolioId }: FuturesTradingPanelProps) {
   const [tradeSymbol, setTradeSymbol] = useState(symbol || 'ES');
   const [contractMonth, setContractMonth] = useState<string>('');
   const [quantity, setQuantity] = useState<string>('');
@@ -77,7 +77,8 @@ export default function FuturesTradingPanel({ userId, symbol = '' }: FuturesTrad
         symbol: tradeSymbol,
         contractMonth: contractMonth || defaultMonthStr,
         quantity: qty,
-        type: tradeType
+        type: tradeType,
+        portfolioId
       });
 
       if (result.success) {

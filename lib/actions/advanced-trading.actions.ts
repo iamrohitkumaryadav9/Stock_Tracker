@@ -5,11 +5,11 @@ import { Portfolio } from '@/database/models/portfolio.model';
 import { AdvancedPosition } from '@/database/models/advanced-position.model';
 import { Transaction } from '@/database/models/transaction.model';
 import { CopyTrade, CopiedTrade } from '@/database/models/copy-trading.model';
-import { 
-  getCryptoQuote, 
-  getForexQuote, 
-  getFuturesQuote, 
-  getOptionQuote 
+import {
+  getCryptoQuote,
+  getForexQuote,
+  getFuturesQuote,
+  getOptionQuote
 } from './market-data.actions';
 import { getStockQuote } from './quote.actions';
 
@@ -23,6 +23,7 @@ export interface OptionsTradeParams {
   optionType: 'call' | 'put';
   quantity: number;
   type: 'buy' | 'sell';
+  portfolioId?: string;
 }
 
 export async function executeOptionsTrade(params: OptionsTradeParams): Promise<{
@@ -31,8 +32,8 @@ export async function executeOptionsTrade(params: OptionsTradeParams): Promise<{
   transactionId?: string;
 }> {
   try {
-    const { userId, underlyingSymbol, strikePrice, expirationDate, optionType, quantity, type } = params;
-    
+    const { userId, underlyingSymbol, strikePrice, expirationDate, optionType, quantity, type, portfolioId } = params;
+
     const mongoose = await connectToDatabase();
     const db = mongoose.connection.db;
     if (!db) throw new Error('MongoDB connection not found');
@@ -47,13 +48,24 @@ export async function executeOptionsTrade(params: OptionsTradeParams): Promise<{
     const totalAmount = quantity * premium * 100; // Options are typically 100 shares per contract
 
     // Get or create portfolio
-    let portfolio = await Portfolio.findOne({ userId });
+    let portfolio;
+    if (portfolioId) {
+      portfolio = await Portfolio.findOne({ _id: portfolioId, userId });
+    } else {
+      portfolio = await Portfolio.findOne({ userId }).sort({ createdAt: 1 });
+    }
+
     if (!portfolio) {
-      portfolio = await Portfolio.create({
-        userId,
-        cashBalance: 100000,
-        totalValue: 100000
-      });
+      if (!portfolioId) {
+        portfolio = await Portfolio.create({
+          userId,
+          name: 'Main Portfolio',
+          cashBalance: 100000,
+          totalValue: 100000
+        });
+      } else {
+        return { success: false, message: 'Portfolio not found' };
+      }
     }
 
     const symbol = `${underlyingSymbol}${expirationDate.replace(/-/g, '')}${optionType === 'call' ? 'C' : 'P'}${strikePrice}`;
@@ -72,6 +84,7 @@ export async function executeOptionsTrade(params: OptionsTradeParams): Promise<{
       // Update or create position
       const existingPosition = await AdvancedPosition.findOne({
         userId,
+        portfolioId: portfolio._id,
         assetType: 'options',
         symbol,
         strikePrice,
@@ -90,6 +103,7 @@ export async function executeOptionsTrade(params: OptionsTradeParams): Promise<{
       } else {
         await AdvancedPosition.create({
           userId,
+          portfolioId: portfolio._id,
           assetType: 'options',
           symbol,
           quantity,
@@ -103,13 +117,29 @@ export async function executeOptionsTrade(params: OptionsTradeParams): Promise<{
       }
     } else {
       // Sell
-      const position = await AdvancedPosition.findOne({
+      let position = await AdvancedPosition.findOne({
         userId,
+        portfolioId: portfolio._id,
         assetType: 'options',
         symbol,
         strikePrice,
         expirationDate: new Date(expirationDate)
       });
+
+      // Fallback for legacy
+      if (!position) {
+        const isFirstPortfolio = (await Portfolio.findOne({ userId }).sort({ createdAt: 1 }).select('_id'))?._id.toString() === portfolio._id.toString();
+        if (isFirstPortfolio) {
+          position = await AdvancedPosition.findOne({
+            userId,
+            portfolioId: { $exists: false },
+            assetType: 'options',
+            symbol,
+            strikePrice,
+            expirationDate: new Date(expirationDate)
+          });
+        }
+      }
 
       if (!position) {
         return { success: false, message: `You don't own any ${optionType} options for ${underlyingSymbol} at strike $${strikePrice}` };
@@ -130,6 +160,7 @@ export async function executeOptionsTrade(params: OptionsTradeParams): Promise<{
       } else {
         position.quantity -= quantity;
         position.totalCost = position.averagePrice * position.quantity * 100;
+        if (!position.portfolioId) position.portfolioId = portfolio._id;
         await position.save();
       }
     }
@@ -173,6 +204,7 @@ export interface CryptoTradeParams {
   symbol: string; // e.g., "BTC", "ETH"
   quantity: number;
   type: 'buy' | 'sell';
+  portfolioId?: string;
 }
 
 export async function executeCryptoTrade(params: CryptoTradeParams): Promise<{
@@ -181,8 +213,8 @@ export async function executeCryptoTrade(params: CryptoTradeParams): Promise<{
   transactionId?: string;
 }> {
   try {
-    const { userId, symbol, quantity, type } = params;
-    
+    const { userId, symbol, quantity, type, portfolioId } = params;
+
     const mongoose = await connectToDatabase();
     const db = mongoose.connection.db;
     if (!db) throw new Error('MongoDB connection not found');
@@ -197,13 +229,24 @@ export async function executeCryptoTrade(params: CryptoTradeParams): Promise<{
     const totalAmount = quantity * price;
 
     // Get or create portfolio
-    let portfolio = await Portfolio.findOne({ userId });
+    let portfolio;
+    if (portfolioId) {
+      portfolio = await Portfolio.findOne({ _id: portfolioId, userId });
+    } else {
+      portfolio = await Portfolio.findOne({ userId }).sort({ createdAt: 1 });
+    }
+
     if (!portfolio) {
-      portfolio = await Portfolio.create({
-        userId,
-        cashBalance: 100000,
-        totalValue: 100000
-      });
+      if (!portfolioId) {
+        portfolio = await Portfolio.create({
+          userId,
+          name: 'Main Portfolio',
+          cashBalance: 100000,
+          totalValue: 100000
+        });
+      } else {
+        return { success: false, message: 'Portfolio not found' };
+      }
     }
 
     if (type === 'buy') {
@@ -220,6 +263,7 @@ export async function executeCryptoTrade(params: CryptoTradeParams): Promise<{
       // Update or create position
       const existingPosition = await AdvancedPosition.findOne({
         userId,
+        portfolioId: portfolio._id,
         assetType: 'crypto',
         symbol: symbol.toUpperCase()
       });
@@ -236,6 +280,7 @@ export async function executeCryptoTrade(params: CryptoTradeParams): Promise<{
       } else {
         await AdvancedPosition.create({
           userId,
+          portfolioId: portfolio._id,
           assetType: 'crypto',
           symbol: symbol.toUpperCase(),
           quantity,
@@ -245,11 +290,25 @@ export async function executeCryptoTrade(params: CryptoTradeParams): Promise<{
       }
     } else {
       // Sell
-      const position = await AdvancedPosition.findOne({
+      let position = await AdvancedPosition.findOne({
         userId,
+        portfolioId: portfolio._id,
         assetType: 'crypto',
         symbol: symbol.toUpperCase()
       });
+
+      // Fallback
+      if (!position) {
+        const isFirstPortfolio = (await Portfolio.findOne({ userId }).sort({ createdAt: 1 }).select('_id'))?._id.toString() === portfolio._id.toString();
+        if (isFirstPortfolio) {
+          position = await AdvancedPosition.findOne({
+            userId,
+            portfolioId: { $exists: false },
+            assetType: 'crypto',
+            symbol: symbol.toUpperCase()
+          });
+        }
+      }
 
       if (!position) {
         return { success: false, message: `You don't own any ${symbol}` };
@@ -270,6 +329,7 @@ export async function executeCryptoTrade(params: CryptoTradeParams): Promise<{
       } else {
         position.quantity -= quantity;
         position.totalCost = position.averagePrice * position.quantity;
+        if (!position.portfolioId) position.portfolioId = portfolio._id;
         await position.save();
       }
     }
@@ -310,6 +370,7 @@ export interface ForexTradeParams {
   pair: string; // e.g., "EUR/USD"
   quantity: number; // Lot size (1 lot = 100,000 units)
   type: 'buy' | 'sell';
+  portfolioId?: string;
 }
 
 export async function executeForexTrade(params: ForexTradeParams): Promise<{
@@ -318,8 +379,8 @@ export async function executeForexTrade(params: ForexTradeParams): Promise<{
   transactionId?: string;
 }> {
   try {
-    const { userId, pair, quantity, type } = params;
-    
+    const { userId, pair, quantity, type, portfolioId } = params;
+
     const mongoose = await connectToDatabase();
     const db = mongoose.connection.db;
     if (!db) throw new Error('MongoDB connection not found');
@@ -335,13 +396,24 @@ export async function executeForexTrade(params: ForexTradeParams): Promise<{
     const totalAmount = quantity * lotSize * quote.rate;
 
     // Get or create portfolio
-    let portfolio = await Portfolio.findOne({ userId });
+    let portfolio;
+    if (portfolioId) {
+      portfolio = await Portfolio.findOne({ _id: portfolioId, userId });
+    } else {
+      portfolio = await Portfolio.findOne({ userId }).sort({ createdAt: 1 });
+    }
+
     if (!portfolio) {
-      portfolio = await Portfolio.create({
-        userId,
-        cashBalance: 100000,
-        totalValue: 100000
-      });
+      if (!portfolioId) {
+        portfolio = await Portfolio.create({
+          userId,
+          name: 'Main Portfolio',
+          cashBalance: 100000,
+          totalValue: 100000
+        });
+      } else {
+        return { success: false, message: 'Portfolio not found' };
+      }
     }
 
     if (type === 'buy') {
@@ -358,6 +430,7 @@ export async function executeForexTrade(params: ForexTradeParams): Promise<{
       // Update or create position
       const existingPosition = await AdvancedPosition.findOne({
         userId,
+        portfolioId: portfolio._id,
         assetType: 'forex',
         symbol: pair.toUpperCase()
       });
@@ -374,6 +447,7 @@ export async function executeForexTrade(params: ForexTradeParams): Promise<{
       } else {
         await AdvancedPosition.create({
           userId,
+          portfolioId: portfolio._id,
           assetType: 'forex',
           symbol: pair.toUpperCase(),
           quantity,
@@ -385,11 +459,25 @@ export async function executeForexTrade(params: ForexTradeParams): Promise<{
       }
     } else {
       // Sell
-      const position = await AdvancedPosition.findOne({
+      let position = await AdvancedPosition.findOne({
         userId,
+        portfolioId: portfolio._id,
         assetType: 'forex',
         symbol: pair.toUpperCase()
       });
+
+      // Fallback
+      if (!position) {
+        const isFirstPortfolio = (await Portfolio.findOne({ userId }).sort({ createdAt: 1 }).select('_id'))?._id.toString() === portfolio._id.toString();
+        if (isFirstPortfolio) {
+          position = await AdvancedPosition.findOne({
+            userId,
+            portfolioId: { $exists: false },
+            assetType: 'forex',
+            symbol: pair.toUpperCase()
+          });
+        }
+      }
 
       if (!position) {
         return { success: false, message: `You don't own any ${pair} positions` };
@@ -410,6 +498,7 @@ export async function executeForexTrade(params: ForexTradeParams): Promise<{
       } else {
         position.quantity -= quantity;
         position.totalCost = position.averagePrice * position.quantity * lotSize;
+        if (!position.portfolioId) position.portfolioId = portfolio._id;
         await position.save();
       }
     }
@@ -453,6 +542,7 @@ export interface FuturesTradeParams {
   contractMonth: string; // e.g., "2024-03"
   quantity: number; // Number of contracts
   type: 'buy' | 'sell';
+  portfolioId?: string;
 }
 
 export async function executeFuturesTrade(params: FuturesTradeParams): Promise<{
@@ -461,8 +551,8 @@ export async function executeFuturesTrade(params: FuturesTradeParams): Promise<{
   transactionId?: string;
 }> {
   try {
-    const { userId, symbol, contractMonth, quantity, type } = params;
-    
+    const { userId, symbol, contractMonth, quantity, type, portfolioId } = params;
+
     const mongoose = await connectToDatabase();
     const db = mongoose.connection.db;
     if (!db) throw new Error('MongoDB connection not found');
@@ -477,13 +567,24 @@ export async function executeFuturesTrade(params: FuturesTradeParams): Promise<{
     const totalAmount = quantity * quote.price * contractSize;
 
     // Get or create portfolio
-    let portfolio = await Portfolio.findOne({ userId });
+    let portfolio;
+    if (portfolioId) {
+      portfolio = await Portfolio.findOne({ _id: portfolioId, userId });
+    } else {
+      portfolio = await Portfolio.findOne({ userId }).sort({ createdAt: 1 });
+    }
+
     if (!portfolio) {
-      portfolio = await Portfolio.create({
-        userId,
-        cashBalance: 100000,
-        totalValue: 100000
-      });
+      if (!portfolioId) {
+        portfolio = await Portfolio.create({
+          userId,
+          name: 'Main Portfolio',
+          cashBalance: 100000,
+          totalValue: 100000
+        });
+      } else {
+        return { success: false, message: 'Portfolio not found' };
+      }
     }
 
     const positionSymbol = `${symbol}-${contractMonth}`;
@@ -502,6 +603,7 @@ export async function executeFuturesTrade(params: FuturesTradeParams): Promise<{
       // Update or create position
       const existingPosition = await AdvancedPosition.findOne({
         userId,
+        portfolioId: portfolio._id,
         assetType: 'futures',
         symbol: positionSymbol.toUpperCase(),
         contractMonth
@@ -519,6 +621,7 @@ export async function executeFuturesTrade(params: FuturesTradeParams): Promise<{
       } else {
         await AdvancedPosition.create({
           userId,
+          portfolioId: portfolio._id,
           assetType: 'futures',
           symbol: positionSymbol.toUpperCase(),
           quantity,
@@ -530,12 +633,27 @@ export async function executeFuturesTrade(params: FuturesTradeParams): Promise<{
       }
     } else {
       // Sell
-      const position = await AdvancedPosition.findOne({
+      let position = await AdvancedPosition.findOne({
         userId,
+        portfolioId: portfolio._id,
         assetType: 'futures',
         symbol: positionSymbol.toUpperCase(),
         contractMonth
       });
+
+      // Fallback
+      if (!position) {
+        const isFirstPortfolio = (await Portfolio.findOne({ userId }).sort({ createdAt: 1 }).select('_id'))?._id.toString() === portfolio._id.toString();
+        if (isFirstPortfolio) {
+          position = await AdvancedPosition.findOne({
+            userId,
+            portfolioId: { $exists: false },
+            assetType: 'futures',
+            symbol: positionSymbol.toUpperCase(),
+            contractMonth
+          });
+        }
+      }
 
       if (!position) {
         return { success: false, message: `You don't own any ${symbol} futures contracts` };
@@ -556,6 +674,7 @@ export async function executeFuturesTrade(params: FuturesTradeParams): Promise<{
       } else {
         position.quantity -= quantity;
         position.totalCost = position.averagePrice * position.quantity * contractSize;
+        if (!position.portfolioId) position.portfolioId = portfolio._id;
         await position.save();
       }
     }
@@ -682,7 +801,7 @@ export async function getCopyTradingList(userId: string): Promise<Array<{
     if (!db) throw new Error('MongoDB connection not found');
 
     const copyTrades = await CopyTrade.find({ followerId: userId }).lean();
-    
+
     // TODO: Fetch trader names from user database
     return copyTrades.map(ct => ({
       traderId: ct.traderId,
@@ -722,7 +841,7 @@ export async function handleCopyTrading(
       try {
         // Calculate copied quantity based on percentage
         const copiedQuantity = Math.floor(quantity * (copyTrade.copyPercentage / 100));
-        
+
         if (copiedQuantity <= 0) continue;
 
         // Check max position size if set
@@ -732,6 +851,7 @@ export async function handleCopyTrading(
         }
 
         // Execute the copied trade based on asset type
+        // Note: Copy trades currently go to default portfolio
         let result;
         switch (assetType) {
           case 'stock':
@@ -801,7 +921,5 @@ export async function handleCopyTrading(
     }
   } catch (error) {
     console.error('Error handling copy trading:', error);
-    // Don't throw - copy trading failure shouldn't break the original trade
   }
 }
-
