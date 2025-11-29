@@ -99,7 +99,7 @@ export async function getPortfolio(userId: string): Promise<PortfolioSummary | n
     const advancedPositionDetails = await Promise.all(
       advancedPositions.map(async (position) => {
         let currentPrice = position.averagePrice;
-        
+
         try {
           switch (position.assetType) {
             case 'crypto':
@@ -134,10 +134,10 @@ export async function getPortfolio(userId: string): Promise<PortfolioSummary | n
           console.error(`Error fetching price for ${position.symbol}:`, error);
         }
 
-        const multiplier = position.assetType === 'options' ? 100 : 
-                          position.assetType === 'futures' ? (position.contractSize || 50) :
-                          position.assetType === 'forex' ? 100000 : 1;
-        
+        const multiplier = position.assetType === 'options' ? 100 :
+          position.assetType === 'futures' ? (position.contractSize || 50) :
+            position.assetType === 'forex' ? 100000 : 1;
+
         const currentValue = currentPrice * position.quantity * multiplier;
         const totalCost = position.totalCost;
         const gainLoss = currentValue - totalCost;
@@ -191,7 +191,10 @@ export async function executeTrade(
   symbol: string,
   type: 'buy' | 'sell',
   quantity: number,
-  price: number
+  price: number,
+  orderType: 'market' | 'limit' | 'stop' | 'stop_limit' | 'trailing_stop' = 'market',
+  limitPrice?: number,
+  stopPrice?: number
 ): Promise<{ success: boolean; message: string; portfolio?: PortfolioSummary }> {
   try {
     const mongoose = await connectToDatabase();
@@ -287,6 +290,10 @@ export async function executeTrade(
       quantity,
       price,
       totalAmount,
+      orderType,
+      limitPrice,
+      stopPrice,
+      status: 'filled', // Simulating immediate fill for paper trading
       timestamp: new Date()
     });
 

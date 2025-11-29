@@ -18,6 +18,11 @@ export interface Transaction extends Document {
   // Forex specific
   baseCurrency?: string;
   quoteCurrency?: string;
+  // Advanced Order fields
+  orderType?: 'market' | 'limit' | 'stop' | 'stop_limit' | 'trailing_stop';
+  limitPrice?: number;
+  stopPrice?: number;
+  status?: 'filled' | 'pending' | 'cancelled' | 'rejected';
   // Copy trading
   isCopied?: boolean;
   copiedFromUserId?: string;
@@ -27,9 +32,9 @@ export interface Transaction extends Document {
 const TransactionSchema = new Schema<Transaction>(
   {
     userId: { type: String, required: true, index: true },
-    assetType: { 
-      type: String, 
-      required: true, 
+    assetType: {
+      type: String,
+      required: true,
       enum: ['stock', 'crypto', 'forex', 'futures', 'options'],
       default: 'stock',
       index: true
@@ -49,6 +54,19 @@ const TransactionSchema = new Schema<Transaction>(
     // Forex fields
     baseCurrency: { type: String, uppercase: true },
     quoteCurrency: { type: String, uppercase: true },
+    // Advanced Order fields
+    orderType: {
+      type: String,
+      enum: ['market', 'limit', 'stop', 'stop_limit', 'trailing_stop'],
+      default: 'market'
+    },
+    limitPrice: { type: Number },
+    stopPrice: { type: Number },
+    status: {
+      type: String,
+      enum: ['filled', 'pending', 'cancelled', 'rejected'],
+      default: 'filled'
+    },
     // Copy trading
     isCopied: { type: Boolean, default: false },
     copiedFromUserId: { type: String, index: true },

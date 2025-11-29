@@ -5,7 +5,9 @@ export const NAV_ITEMS = [
     { href: '/journal', label: 'Journal' },
     { href: '/portfolio/analytics', label: 'Analytics' },
     { href: '/reports', label: 'Reports' },
-    { href: '/tools/roi', label: 'Tools' },
+    { href: '/competitions', label: 'Competitions' },
+    { href: '/tools/templates', label: 'Templates' },
+    { href: '/tools/roi', label: 'ROI' },
     { href: '/social', label: 'Community' },
     { href: '/search', label: 'Search' },
 ];

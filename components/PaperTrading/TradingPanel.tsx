@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 interface TradingPanelProps {
   symbol: string;
   userId: string;
-  userId: string;
 }
 
 export default function TradingPanel({ symbol = '', userId }: TradingPanelProps) {
@@ -21,6 +20,9 @@ export default function TradingPanel({ symbol = '', userId }: TradingPanelProps)
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState<string>('');
   const [price, setPrice] = useState<number | null>(null);
+  const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop' | 'stop_limit' | 'trailing_stop'>('market');
+  const [limitPrice, setLimitPrice] = useState<string>('');
+  const [stopPrice, setStopPrice] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const router = useRouter();
@@ -65,7 +67,16 @@ export default function TradingPanel({ symbol = '', userId }: TradingPanelProps)
 
     setLoading(true);
     try {
-      const result = await executeTrade(userId, tradeSymbol, tradeType, qty, price);
+      const result = await executeTrade(
+        userId,
+        tradeSymbol,
+        tradeType,
+        qty,
+        price,
+        orderType,
+        limitPrice ? parseFloat(limitPrice) : undefined,
+        stopPrice ? parseFloat(stopPrice) : undefined
+      );
 
       if (result.success) {
         toast.success(result.message);
@@ -127,6 +138,51 @@ export default function TradingPanel({ symbol = '', userId }: TradingPanelProps)
             Sell
           </Button>
         </div>
+
+        <div>
+          <Label className="text-gray-400 mb-2 block">Order Type</Label>
+          <select
+            value={orderType}
+            onChange={(e) => setOrderType(e.target.value as any)}
+            className="w-full bg-gray-700 border border-gray-600 text-white rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          >
+            <option value="market">Market Order</option>
+            <option value="limit">Limit Order</option>
+            <option value="stop">Stop Order</option>
+            <option value="stop_limit">Stop Limit Order</option>
+            <option value="trailing_stop">Trailing Stop</option>
+          </select>
+        </div>
+
+        {(orderType === 'limit' || orderType === 'stop_limit') && (
+          <div>
+            <Label className="text-gray-400 mb-2 block">Limit Price</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={limitPrice}
+              onChange={(e) => setLimitPrice(e.target.value)}
+              placeholder="Enter limit price"
+              className="bg-gray-700 border-gray-600 text-white"
+            />
+          </div>
+        )}
+
+        {(orderType === 'stop' || orderType === 'stop_limit' || orderType === 'trailing_stop') && (
+          <div>
+            <Label className="text-gray-400 mb-2 block">
+              {orderType === 'trailing_stop' ? 'Trailing Amount ($)' : 'Stop Price'}
+            </Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={stopPrice}
+              onChange={(e) => setStopPrice(e.target.value)}
+              placeholder={orderType === 'trailing_stop' ? "e.g., 5.00" : "Enter stop price"}
+              className="bg-gray-700 border-gray-600 text-white"
+            />
+          </div>
+        )}
 
         <div>
           <Label htmlFor="quantity" className="text-gray-400 mb-2 block">
