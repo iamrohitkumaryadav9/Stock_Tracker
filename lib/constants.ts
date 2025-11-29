@@ -9,6 +9,7 @@ export const NAV_ITEMS = [
     { href: '/tools/templates', label: 'Templates' },
     { href: '/tools/roi', label: 'ROI' },
     { href: '/social', label: 'Community' },
+    { href: '/discovery', label: 'Discovery' },
     { href: '/search', label: 'Search' },
 ];
 
