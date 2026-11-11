@@ -1,6 +1,6 @@
 import { auth } from '@/lib/better-auth/auth';
 import { headers } from 'next/headers';
-import PortfolioTemplates from '@/components/Tools/PortfolioTemplates';
+import PortfolioTemplates from '@/components/tools/PortfolioTemplates';
 
 export default async function TemplatesPage() {
     const session = await auth.api.getSession({ headers: await headers() });

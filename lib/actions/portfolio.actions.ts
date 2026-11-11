@@ -415,6 +415,18 @@ export async function executeTrade(
   }
 }
 
+/** Deletes the user's recorded transactions (history only: open positions and portfolios are left untouched). */
+export async function deleteTransactionHistory(userId: string): Promise<{ success: boolean; message: string; deletedCount?: number }> {
+  try {
+    await connectToDatabase();
+    const res = await Transaction.deleteMany({ userId });
+    return { success: true, message: 'Transaction history deleted', deletedCount: res.deletedCount ?? 0 };
+  } catch (error) {
+    console.error('Error deleting transaction history:', error);
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to delete transaction history' };
+  }
+}
+
 export async function getTransactionHistory(
   userId: string,
   limit: number = 50

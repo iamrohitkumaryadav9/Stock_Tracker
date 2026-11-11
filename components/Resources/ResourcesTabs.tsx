@@ -5,7 +5,7 @@ import { BarChart2, FileText, Trophy, Layout, BookOpen, Calculator } from 'lucid
 import AnalyticsView from './AnalyticsView';
 import ReportsClient from '@/app/(root)/reports/reports-client';
 import Leaderboard from '@/components/Competitions/Leaderboard';
-import PortfolioTemplates from '@/components/Tools/PortfolioTemplates';
+import PortfolioTemplates from '@/components/tools/PortfolioTemplates';
 import JournalClient from '@/app/(root)/journal/journal-client';
 import ROICalculator from '@/components/tools/ROICalculator';
 

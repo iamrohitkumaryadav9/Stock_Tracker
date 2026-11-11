@@ -14,62 +14,89 @@ const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '
 
 // ==================== SEARCH ====================
 
-export async function searchGlobal(query: string, type: 'all' | 'stocks' | 'users' | 'posts' = 'all') {
-    try {
-        await connectToDatabase();
-        const results: any = {
-            stocks: [],
-            users: [],
-            posts: []
-        };
+export interface SearchResults {
+    stocks: { symbol: string; name: string; type?: string; exchange?: string }[];
+    users: { id: string; name: string; image?: string }[];
+    posts: { id: string; userName: string; content: string; symbol?: string; type: string; createdAt: string }[];
+    /** Per-source failures, so one broken source never blanks the others and the UI can say what failed. */
+    errors: { stocks?: string; users?: string; posts?: string };
+}
 
-        // 1. Search Stocks (Yahoo Finance)
-        if (type === 'all' || type === 'stocks') {
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+export async function searchGlobal(rawQuery: string, type: 'all' | 'stocks' | 'users' | 'posts' = 'all'): Promise<SearchResults> {
+    const results: SearchResults = { stocks: [], users: [], posts: [], errors: {} };
+    const query = (rawQuery ?? '').trim().slice(0, 80);
+    if (!query) return results;
+    // User input must never be interpreted as a regex (invalid patterns throw, and some are ReDoS vectors).
+    const rx = new RegExp(escapeRegex(query), 'i');
+    const want = (t: string) => type === 'all' || type === t;
+
+    // Each source is independent: a failure in one must not hide results from the others.
+    await Promise.all([
+        // 1. Stocks (Yahoo Finance)
+        (async () => {
+            if (!want('stocks')) return;
             try {
-                const yahooResults = await yahooFinance.search(query);
-                results.stocks = yahooResults.quotes
-                    .filter((q: any) => q.isYahooFinance) // Filter valid quotes
-                    .slice(0, 5)
+                const res = await yahooFinance.search(query);
+                results.stocks = (res.quotes ?? [])
+                    .filter((q: any) => q.isYahooFinance && q.symbol)
+                    .slice(0, 8)
                     .map((q: any) => ({
                         symbol: q.symbol,
-                        name: q.shortname || q.longname,
+                        name: q.shortname || q.longname || q.symbol,
                         type: q.quoteType,
-                        exchange: q.exchange
+                        exchange: q.exchDisp || q.exchange,
                     }));
             } catch (error) {
                 console.error('Yahoo search error:', error);
+                results.errors.stocks = 'Stock search is temporarily unavailable.';
             }
-        }
+        })(),
 
-        // 2. Search Users (DB)
-        if (type === 'all' || type === 'users') {
-            const users = await User.find({
-                $or: [
-                    { name: { $regex: query, $options: 'i' } },
-                    { username: { $regex: query, $options: 'i' } }
-                ]
-            }).limit(5).select('_id name username photo');
+        // 2. People: accounts live in better-auth's `user` collection (the old Clerk-style `User` model is unused).
+        //    Only the public display name and avatar are returned. Never the email.
+        (async () => {
+            if (!want('users')) return;
+            try {
+                const mongoose = await connectToDatabase();
+                const rows = await mongoose.connection.db!
+                    .collection('user')
+                    .find({ name: rx }, { projection: { name: 1, image: 1 } })
+                    .limit(8)
+                    .toArray();
+                results.users = rows.map((u) => ({ id: String(u._id), name: String(u.name ?? 'Unknown'), image: u.image ?? undefined }));
+            } catch (error) {
+                console.error('User search error:', error);
+                results.errors.users = 'People search is temporarily unavailable.';
+            }
+        })(),
 
-            results.users = JSON.parse(JSON.stringify(users));
-        }
+        // 3. Community posts (fields are `content` and `userName`; an exact ticker match also counts)
+        (async () => {
+            if (!want('posts')) return;
+            try {
+                await connectToDatabase();
+                const rows = await Post.find({ $or: [{ content: rx }, { symbol: query.toUpperCase() }] })
+                    .sort({ createdAt: -1 })
+                    .limit(8)
+                    .lean();
+                results.posts = rows.map((p) => ({
+                    id: String(p._id),
+                    userName: p.userName,
+                    content: p.content,
+                    symbol: p.symbol,
+                    type: p.type,
+                    createdAt: new Date(p.createdAt).toISOString(),
+                }));
+            } catch (error) {
+                console.error('Post search error:', error);
+                results.errors.posts = 'Post search is temporarily unavailable.';
+            }
+        })(),
+    ]);
 
-        // 3. Search Posts (DB)
-        if (type === 'all' || type === 'posts') {
-            const posts = await Post.find({
-                text: { $regex: query, $options: 'i' }
-            })
-                .populate('author', '_id name username photo')
-                .sort({ createdAt: -1 })
-                .limit(5);
-
-            results.posts = JSON.parse(JSON.stringify(posts));
-        }
-
-        return results;
-    } catch (error) {
-        console.error('Global search error:', error);
-        return { stocks: [], users: [], posts: [] };
-    }
+    return results;
 }
 
 // ==================== TRENDING ====================

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Search as SearchIcon } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Form from 'next/form';
+import Link from 'next/link';
 
 export default async function SearchPage(props: { searchParams: Promise<{ q?: string; type?: string }> }) {
     const searchParams = await props.searchParams;
@@ -17,10 +18,13 @@ export default async function SearchPage(props: { searchParams: Promise<{ q?: st
         redirect('/sign-in');
     }
 
-    const query = searchParams.q || '';
-    const type = (searchParams.type as 'all' | 'stocks' | 'users' | 'posts') || 'all';
+    const query = (searchParams.q || '').trim().slice(0, 80);
+    // Validate the tab: an arbitrary ?type= value used to leave every section hidden
+    const TYPES = ['all', 'stocks', 'users', 'posts'] as const;
+    const type = (TYPES as readonly string[]).includes(searchParams.type ?? '') ? (searchParams.type as (typeof TYPES)[number]) : 'all';
+    const tabHref = (t: string) => `/search?${new URLSearchParams({ q: query, type: t }).toString()}`;
 
-    const results = query ? await searchGlobal(query, type) : { stocks: [], users: [], posts: [] };
+    const results = await searchGlobal(query, type);
 
     return (
         <div className="w-full py-10 px-4 md:px-6 lg:px-8">
@@ -46,24 +50,25 @@ export default async function SearchPage(props: { searchParams: Promise<{ q?: st
                 <div className="mb-6">
                     {/* Using links for tabs to preserve query params and allow server-side rendering */}
                     <div className="flex gap-2 p-1 bg-gray-800/50 rounded-lg w-fit">
-                        {['all', 'stocks', 'users', 'posts'].map((t) => (
-                            <a
+                        {TYPES.map((t) => (
+                            <Link
                                 key={t}
-                                href={`/search?q=${query}&type=${t}`}
+                                href={tabHref(t)}
+                                aria-current={type === t ? 'page' : undefined}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${type === t
                                         ? 'bg-gray-700 text-white shadow-sm'
                                         : 'text-gray-400 hover:text-gray-200'
                                     }`}
                             >
-                                {t.charAt(0).toUpperCase() + t.slice(1)}
-                            </a>
+                                {t === 'users' ? 'People' : t.charAt(0).toUpperCase() + t.slice(1)}
+                            </Link>
                         ))}
                     </div>
                 </div>
 
                 {/* Results */}
                 {query ? (
-                    <SearchResults results={results} type={type} />
+                    <SearchResults results={results} type={type} query={query} />
                 ) : (
                     <div className="text-center py-20 text-gray-500">
                         Enter a search term to find stocks, users, and community posts.
