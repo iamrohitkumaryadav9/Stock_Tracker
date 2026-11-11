@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
     let response: NextResponse;
     
     if (!sessionCookie) {
-        response = NextResponse.redirect(new URL("/", request.url));
+        response = NextResponse.redirect(new URL("/sign-in", request.url));
     } else {
         response = NextResponse.next();
     }

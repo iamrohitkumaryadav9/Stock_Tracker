@@ -9,10 +9,15 @@ export const signUpWithEmail = async ({ email, password, fullName, country, inve
         const response = await auth.api.signUpEmail({ body: { email, password, name: fullName } })
 
         if(response) {
-            await inngest.send({
-                name: 'app/user.created',
-                data: { email, name: fullName, country, investmentGoals, riskTolerance, preferredIndustry }
-            })
+            // Welcome email is a best-effort side effect; never fail sign-up because of it
+            try {
+                await inngest.send({
+                    name: 'app/user.created',
+                    data: { email, name: fullName, country, investmentGoals, riskTolerance, preferredIndustry }
+                })
+            } catch (err) {
+                console.warn('Inngest event not sent (welcome email skipped):', (err as Error).message)
+            }
         }
 
         return { success: true, data: response }
